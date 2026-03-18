@@ -1,0 +1,2822 @@
+<!DOCTYPE html>
+<html lang="it">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>PPAP Manager R1 — Production Part Approval Process</title>
+<style>
+@import url('https://fonts.googleapis.com/css2?family=Bebas+Neue&family=IBM+Plex+Mono:wght@400;500;600&family=IBM+Plex+Sans:wght@300;400;500;600&display=swap');
+
+:root {
+  --bg: #0d0f12;
+  --bg2: #13161b;
+  --bg3: #1a1e25;
+  --border: #2a2f3a;
+  --border2: #3a4050;
+  --accent: #e8a020;
+  --accent2: #f0b840;
+  --accent-dim: rgba(232,160,32,0.12);
+  --green: #3ecf8e;
+  --green-dim: rgba(62,207,142,0.12);
+  --red: #f05050;
+  --red-dim: rgba(240,80,80,0.12);
+  --blue: #4090f0;
+  --blue-dim: rgba(64,144,240,0.12);
+  --text: #e2e6ed;
+  --text2: #9aa3b2;
+  --text3: #5a6272;
+  --font-display: 'Bebas Neue', sans-serif;
+  --font-mono: 'IBM Plex Mono', monospace;
+  --font-body: 'IBM Plex Sans', sans-serif;
+}
+
+* { box-sizing: border-box; margin: 0; padding: 0; }
+
+body {
+  background: var(--bg);
+  color: var(--text);
+  font-family: var(--font-body);
+  font-size: 14px;
+  min-height: 100vh;
+  overflow-x: hidden;
+}
+
+/* ─── HEADER ─────────────────────────────────────────────── */
+#header {
+  background: var(--bg2);
+  border-bottom: 2px solid var(--accent);
+  padding: 0 32px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  height: 60px;
+  position: sticky;
+  top: 0;
+  z-index: 100;
+}
+#header .logo {
+  display: flex;
+  align-items: baseline;
+  gap: 10px;
+}
+#header .logo .title {
+  font-family: var(--font-display);
+  font-size: 28px;
+  letter-spacing: 3px;
+  color: var(--accent);
+  line-height: 1;
+}
+#header .logo .rev {
+  font-family: var(--font-mono);
+  font-size: 11px;
+  color: var(--text3);
+  letter-spacing: 1px;
+}
+#header .hdr-info {
+  display: flex;
+  gap: 24px;
+  align-items: center;
+}
+#header .hdr-info span {
+  font-family: var(--font-mono);
+  font-size: 11px;
+  color: var(--text3);
+  letter-spacing: 0.5px;
+}
+#header .hdr-info span strong {
+  color: var(--text2);
+}
+#save-btn {
+  background: var(--accent-dim);
+  border: 1px solid var(--accent);
+  color: var(--accent);
+  font-family: var(--font-mono);
+  font-size: 11px;
+  letter-spacing: 1px;
+  padding: 6px 14px;
+  cursor: pointer;
+  transition: all 0.2s;
+}
+#save-btn:hover { background: var(--accent); color: #000; }
+
+/* ─── LAYOUT ─────────────────────────────────────────────── */
+#app {
+  display: flex;
+  min-height: calc(100vh - 60px);
+}
+
+/* ─── SIDEBAR ─────────────────────────────────────────────── */
+#sidebar {
+  width: 260px;
+  min-width: 260px;
+  background: var(--bg2);
+  border-right: 1px solid var(--border);
+  padding: 20px 0;
+  overflow-y: auto;
+}
+.sidebar-section {
+  margin-bottom: 8px;
+}
+.sidebar-section-title {
+  font-family: var(--font-mono);
+  font-size: 9px;
+  letter-spacing: 2px;
+  color: var(--text3);
+  padding: 8px 20px 4px;
+  text-transform: uppercase;
+}
+.nav-item {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 9px 20px;
+  cursor: pointer;
+  border-left: 3px solid transparent;
+  transition: all 0.15s;
+  position: relative;
+}
+.nav-item:hover { background: var(--bg3); }
+.nav-item.active {
+  background: var(--accent-dim);
+  border-left-color: var(--accent);
+}
+.nav-item .nav-icon {
+  width: 22px;
+  height: 22px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 13px;
+  flex-shrink: 0;
+}
+.nav-item .nav-label {
+  font-size: 12.5px;
+  font-weight: 500;
+  color: var(--text2);
+  flex: 1;
+}
+.nav-item.active .nav-label { color: var(--accent); }
+.nav-item .nav-status {
+  width: 7px;
+  height: 7px;
+  border-radius: 50%;
+  background: var(--border2);
+  flex-shrink: 0;
+}
+.nav-item .nav-status.done { background: var(--green); }
+.nav-item .nav-status.wip  { background: var(--accent); }
+.nav-item .nav-status.na   { background: var(--text3); }
+
+/* Overall progress bar */
+#sidebar-progress {
+  margin: 0 20px 16px;
+  padding: 12px;
+  background: var(--bg3);
+  border: 1px solid var(--border);
+}
+#sidebar-progress .pbar-label {
+  display: flex;
+  justify-content: space-between;
+  font-family: var(--font-mono);
+  font-size: 10px;
+  color: var(--text3);
+  margin-bottom: 6px;
+}
+#sidebar-progress .pbar-track {
+  height: 4px;
+  background: var(--border);
+  border-radius: 2px;
+  overflow: hidden;
+}
+#sidebar-progress .pbar-fill {
+  height: 100%;
+  background: linear-gradient(90deg, var(--accent), var(--accent2));
+  transition: width 0.4s ease;
+  border-radius: 2px;
+}
+
+/* ─── MAIN CONTENT ─────────────────────────────────────────── */
+#main {
+  flex: 1;
+  overflow-y: auto;
+  padding: 28px 36px;
+}
+
+.page { display: none; }
+.page.active { display: block; }
+
+/* ─── COMMON COMPONENTS ─────────────────────────────────────── */
+.page-header {
+  margin-bottom: 28px;
+  padding-bottom: 18px;
+  border-bottom: 1px solid var(--border);
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 20px;
+}
+.page-header .ph-left {}
+.page-title {
+  font-family: var(--font-display);
+  font-size: 36px;
+  letter-spacing: 2px;
+  color: var(--text);
+  line-height: 1;
+  margin-bottom: 6px;
+}
+.page-subtitle {
+  font-size: 12px;
+  color: var(--text3);
+  font-family: var(--font-mono);
+  letter-spacing: 0.5px;
+}
+.page-badge {
+  background: var(--accent-dim);
+  border: 1px solid var(--accent);
+  color: var(--accent);
+  font-family: var(--font-mono);
+  font-size: 10px;
+  letter-spacing: 1px;
+  padding: 4px 10px;
+  white-space: nowrap;
+  align-self: flex-start;
+}
+
+/* Cards */
+.card {
+  background: var(--bg2);
+  border: 1px solid var(--border);
+  margin-bottom: 16px;
+  overflow: hidden;
+}
+.card-header {
+  padding: 12px 18px;
+  background: var(--bg3);
+  border-bottom: 1px solid var(--border);
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  cursor: pointer;
+}
+.card-header .ch-left {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+.card-header .ch-num {
+  font-family: var(--font-mono);
+  font-size: 10px;
+  color: var(--text3);
+  background: var(--bg);
+  padding: 2px 7px;
+  border: 1px solid var(--border);
+}
+.card-header .ch-title {
+  font-weight: 600;
+  font-size: 13px;
+  color: var(--text);
+}
+.card-header .ch-badge {
+  font-family: var(--font-mono);
+  font-size: 9px;
+  letter-spacing: 1px;
+  padding: 2px 8px;
+  border: 1px solid;
+}
+.ch-badge.required { color: var(--red); border-color: var(--red); background: var(--red-dim); }
+.ch-badge.optional { color: var(--text3); border-color: var(--border2); background: transparent; }
+.ch-badge.done { color: var(--green); border-color: var(--green); background: var(--green-dim); }
+.ch-badge.wip  { color: var(--accent); border-color: var(--accent); background: var(--accent-dim); }
+
+.card-body {
+  padding: 18px;
+}
+.card-body.collapsed { display: none; }
+
+/* Form elements */
+.form-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(240px, 1fr));
+  gap: 14px;
+  margin-bottom: 14px;
+}
+.form-grid-2 { grid-template-columns: repeat(2, 1fr); }
+.form-grid-3 { grid-template-columns: repeat(3, 1fr); }
+
+.field {
+  display: flex;
+  flex-direction: column;
+  gap: 5px;
+}
+.field label {
+  font-family: var(--font-mono);
+  font-size: 10px;
+  letter-spacing: 0.8px;
+  color: var(--text3);
+  text-transform: uppercase;
+}
+.field input, .field select, .field textarea {
+  background: var(--bg3);
+  border: 1px solid var(--border);
+  color: var(--text);
+  font-family: var(--font-body);
+  font-size: 13px;
+  padding: 8px 10px;
+  outline: none;
+  transition: border-color 0.15s;
+  width: 100%;
+}
+.field input:focus, .field select:focus, .field textarea:focus {
+  border-color: var(--accent);
+}
+.field textarea { resize: vertical; min-height: 70px; }
+.field select { cursor: pointer; }
+.field select option { background: var(--bg3); }
+
+/* Buttons */
+.btn {
+  font-family: var(--font-mono);
+  font-size: 11px;
+  letter-spacing: 1px;
+  padding: 8px 16px;
+  cursor: pointer;
+  border: 1px solid;
+  transition: all 0.15s;
+  display: inline-flex;
+  align-items: center;
+  gap: 7px;
+}
+.btn-primary { background: var(--accent); border-color: var(--accent); color: #000; font-weight: 600; }
+.btn-primary:hover { background: var(--accent2); border-color: var(--accent2); }
+.btn-outline { background: transparent; border-color: var(--border2); color: var(--text2); }
+.btn-outline:hover { border-color: var(--accent); color: var(--accent); background: var(--accent-dim); }
+.btn-danger { background: var(--red-dim); border-color: var(--red); color: var(--red); }
+.btn-success { background: var(--green-dim); border-color: var(--green); color: var(--green); }
+.btn-sm { padding: 5px 10px; font-size: 10px; }
+
+.btn-row {
+  display: flex;
+  gap: 10px;
+  align-items: center;
+  margin-top: 14px;
+  flex-wrap: wrap;
+}
+
+/* Info boxes */
+.info-box {
+  border: 1px solid var(--border);
+  padding: 12px 14px;
+  margin-bottom: 14px;
+  display: flex;
+  gap: 10px;
+}
+.info-box .ib-icon { font-size: 16px; flex-shrink: 0; margin-top: 1px; }
+.info-box .ib-body {}
+.info-box .ib-title { font-weight: 600; font-size: 12px; margin-bottom: 4px; }
+.info-box .ib-text { font-size: 12px; color: var(--text2); line-height: 1.6; }
+.info-box.info { background: var(--blue-dim); border-color: var(--blue); }
+.info-box.info .ib-title { color: var(--blue); }
+.info-box.warning { background: var(--accent-dim); border-color: var(--accent); }
+.info-box.warning .ib-title { color: var(--accent); }
+.info-box.success { background: var(--green-dim); border-color: var(--green); }
+.info-box.success .ib-title { color: var(--green); }
+
+/* Table */
+.data-table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 12px;
+  margin-bottom: 14px;
+}
+.data-table th {
+  background: var(--bg3);
+  border: 1px solid var(--border);
+  padding: 8px 10px;
+  font-family: var(--font-mono);
+  font-size: 10px;
+  letter-spacing: 0.8px;
+  color: var(--text3);
+  text-align: left;
+  text-transform: uppercase;
+  white-space: nowrap;
+}
+.data-table td {
+  border: 1px solid var(--border);
+  padding: 7px 10px;
+  color: var(--text2);
+  vertical-align: middle;
+}
+.data-table tr:hover td { background: var(--bg3); }
+.data-table td input, .data-table td select {
+  background: transparent;
+  border: none;
+  color: var(--text);
+  font-family: var(--font-body);
+  font-size: 12px;
+  padding: 2px 4px;
+  outline: none;
+  width: 100%;
+}
+.data-table td input:focus { border-bottom: 1px solid var(--accent); }
+
+/* Steps indicator */
+.steps-flow {
+  display: flex;
+  align-items: center;
+  gap: 0;
+  margin-bottom: 24px;
+  overflow-x: auto;
+  padding-bottom: 4px;
+}
+.step-node {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 6px;
+  min-width: 80px;
+  cursor: pointer;
+}
+.step-circle {
+  width: 36px;
+  height: 36px;
+  border-radius: 50%;
+  border: 2px solid var(--border2);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-family: var(--font-mono);
+  font-size: 12px;
+  font-weight: 600;
+  color: var(--text3);
+  background: var(--bg2);
+  position: relative;
+  z-index: 1;
+  transition: all 0.2s;
+}
+.step-circle.done { border-color: var(--green); color: var(--green); background: var(--green-dim); }
+.step-circle.active { border-color: var(--accent); color: var(--accent); background: var(--accent-dim); }
+.step-label { font-size: 10px; color: var(--text3); text-align: center; line-height: 1.3; max-width: 75px; }
+.step-label.active { color: var(--accent); }
+.step-connector {
+  flex: 1;
+  height: 2px;
+  background: var(--border);
+  min-width: 20px;
+  margin-bottom: 22px;
+}
+.step-connector.done { background: var(--green); }
+
+/* Checklist */
+.checklist { list-style: none; }
+.checklist li {
+  display: flex;
+  align-items: flex-start;
+  gap: 10px;
+  padding: 8px 0;
+  border-bottom: 1px solid var(--border);
+}
+.checklist li:last-child { border-bottom: none; }
+.checklist li input[type="checkbox"] {
+  accent-color: var(--green);
+  width: 15px;
+  height: 15px;
+  flex-shrink: 0;
+  margin-top: 1px;
+  cursor: pointer;
+}
+.checklist li .cl-text { font-size: 13px; color: var(--text2); flex: 1; line-height: 1.5; }
+.checklist li .cl-tag {
+  font-family: var(--font-mono);
+  font-size: 9px;
+  letter-spacing: 0.8px;
+  padding: 2px 7px;
+  border: 1px solid var(--border2);
+  color: var(--text3);
+  white-space: nowrap;
+  align-self: center;
+}
+
+/* Signature block */
+.sign-block {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
+  gap: 14px;
+  margin-top: 14px;
+}
+.sign-box {
+  border: 1px solid var(--border);
+  padding: 14px;
+  background: var(--bg3);
+}
+.sign-box .sb-role {
+  font-family: var(--font-mono);
+  font-size: 9px;
+  letter-spacing: 1px;
+  color: var(--text3);
+  text-transform: uppercase;
+  margin-bottom: 8px;
+}
+.sign-box .sb-name {
+  font-size: 13px;
+  font-weight: 500;
+  color: var(--text);
+  margin-bottom: 4px;
+}
+.sign-line {
+  border-top: 1px solid var(--border2);
+  margin: 10px 0 6px;
+  padding-top: 6px;
+  font-size: 11px;
+  color: var(--text3);
+  font-family: var(--font-mono);
+}
+.sign-box .sign-status {
+  display: inline-block;
+  font-family: var(--font-mono);
+  font-size: 9px;
+  letter-spacing: 0.8px;
+  padding: 2px 7px;
+  border: 1px solid var(--border2);
+  color: var(--text3);
+}
+.sign-box .sign-status.signed { border-color: var(--green); color: var(--green); background: var(--green-dim); }
+.sign-box .sign-status.pending { border-color: var(--accent); color: var(--accent); background: var(--accent-dim); }
+
+/* MSA / SPC calculation area */
+.calc-area {
+  background: var(--bg);
+  border: 1px solid var(--border);
+  padding: 16px;
+  font-family: var(--font-mono);
+  font-size: 12px;
+  margin-top: 10px;
+}
+.calc-result {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 10px;
+  background: var(--bg3);
+  border: 1px solid var(--border);
+  margin-top: 10px;
+}
+.calc-result .cr-label { color: var(--text3); font-size: 11px; flex: 1; }
+.calc-result .cr-value { font-size: 18px; font-weight: 600; }
+.calc-result .cr-verdict {
+  font-size: 10px;
+  letter-spacing: 1px;
+  padding: 3px 9px;
+  border: 1px solid;
+}
+
+/* Divider */
+.divider {
+  border: none;
+  border-top: 1px solid var(--border);
+  margin: 20px 0;
+}
+
+/* Notification toast */
+#toast {
+  position: fixed;
+  bottom: 24px;
+  right: 24px;
+  background: var(--bg3);
+  border: 1px solid var(--green);
+  color: var(--green);
+  font-family: var(--font-mono);
+  font-size: 12px;
+  padding: 10px 18px;
+  z-index: 9999;
+  display: none;
+  letter-spacing: 0.5px;
+}
+
+/* Dashboard tiles */
+.dash-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
+  gap: 14px;
+  margin-bottom: 24px;
+}
+.dash-tile {
+  background: var(--bg2);
+  border: 1px solid var(--border);
+  padding: 16px;
+  cursor: pointer;
+  transition: all 0.15s;
+}
+.dash-tile:hover { border-color: var(--accent); background: var(--accent-dim); }
+.dash-tile .dt-num {
+  font-family: var(--font-display);
+  font-size: 40px;
+  color: var(--accent);
+  line-height: 1;
+}
+.dash-tile .dt-label {
+  font-size: 12px;
+  color: var(--text2);
+  margin-top: 6px;
+  font-weight: 500;
+}
+.dash-tile .dt-sub {
+  font-family: var(--font-mono);
+  font-size: 10px;
+  color: var(--text3);
+  margin-top: 3px;
+}
+
+/* Timeline */
+.timeline { position: relative; padding-left: 24px; }
+.timeline::before {
+  content: '';
+  position: absolute;
+  left: 5px;
+  top: 4px;
+  bottom: 4px;
+  width: 2px;
+  background: var(--border);
+}
+.tl-item {
+  position: relative;
+  margin-bottom: 18px;
+}
+.tl-item::before {
+  content: '';
+  position: absolute;
+  left: -22px;
+  top: 5px;
+  width: 10px;
+  height: 10px;
+  border-radius: 50%;
+  border: 2px solid var(--border2);
+  background: var(--bg2);
+}
+.tl-item.done::before { border-color: var(--green); background: var(--green); }
+.tl-item.active::before { border-color: var(--accent); background: var(--accent); }
+.tl-item .tl-title { font-weight: 600; font-size: 13px; margin-bottom: 3px; }
+.tl-item.active .tl-title { color: var(--accent); }
+.tl-item .tl-desc { font-size: 12px; color: var(--text3); line-height: 1.5; }
+
+/* Print styles */
+@media print {
+  #sidebar, #header { display: none; }
+  #main { padding: 0; }
+  .card { break-inside: avoid; }
+}
+
+/* Scrollbar */
+::-webkit-scrollbar { width: 6px; height: 6px; }
+::-webkit-scrollbar-track { background: var(--bg); }
+::-webkit-scrollbar-thumb { background: var(--border2); border-radius: 3px; }
+::-webkit-scrollbar-thumb:hover { background: var(--text3); }
+
+/* Responsive */
+@media (max-width: 768px) {
+  #sidebar { display: none; }
+  #main { padding: 16px; }
+}
+
+.tag-pill {
+  display: inline-block;
+  font-family: var(--font-mono);
+  font-size: 9px;
+  letter-spacing: 0.8px;
+  padding: 2px 8px;
+  border: 1px solid var(--border2);
+  color: var(--text3);
+  margin: 2px;
+}
+.tag-pill.norm { border-color: var(--blue); color: var(--blue); }
+
+.section-title {
+  font-family: var(--font-mono);
+  font-size: 10px;
+  letter-spacing: 2px;
+  text-transform: uppercase;
+  color: var(--text3);
+  margin: 18px 0 10px;
+  padding-bottom: 6px;
+  border-bottom: 1px solid var(--border);
+}
+
+.notice {
+  background: var(--bg3);
+  border-left: 3px solid var(--accent);
+  padding: 10px 14px;
+  font-size: 12px;
+  color: var(--text2);
+  margin-bottom: 14px;
+  line-height: 1.6;
+}
+</style>
+</head>
+<body>
+
+<!-- ── HEADER ─────────────────────────────────────────────── -->
+<div id="header">
+  <div class="logo">
+    <span class="title">PPAP MANAGER</span>
+    <span class="rev">REV.1 · IATF 16949:2016 / AIAG 4ª ED.</span>
+  </div>
+  <div class="hdr-info">
+    <span>PROGETTO: <strong id="hdr-project">—</strong></span>
+    <span>CLIENTE: <strong id="hdr-client">—</strong></span>
+    <span>LIVELLO: <strong id="hdr-level">—</strong></span>
+    <span id="hdr-date"></span>
+  </div>
+  <div style="display:flex;gap:8px;align-items:center;">
+    <button class="btn btn-outline btn-sm" onclick="openFileManager()" title="Apri/Salva su disco">📁 FILE</button>
+    <div style="display:flex;gap:8px;align-items:center;">
+    <button class="btn btn-outline btn-sm" onclick="openFileManager()" title="Gestione file su disco" style="letter-spacing:0.5px;">📁 FILE</button>
+    <button class="btn btn-primary btn-sm" id="save-btn" onclick="saveData()">💾 SALVA</button>
+  </div>
+  </div>
+</div>
+
+<!-- ── APP ─────────────────────────────────────────────────── -->
+<div id="app">
+
+<!-- ── SIDEBAR ──────────────────────────────────────────────── -->
+<nav id="sidebar">
+  <div id="sidebar-progress">
+    <div class="pbar-label">
+      <span>AVANZAMENTO PPAP</span>
+      <span id="pbar-pct">0%</span>
+    </div>
+    <div class="pbar-track"><div class="pbar-fill" id="pbar-fill" style="width:0%"></div></div>
+  </div>
+
+  <div class="sidebar-section">
+    <div class="sidebar-section-title">Avvio</div>
+    <div class="nav-item active" data-page="dashboard" onclick="showPage('dashboard',this)">
+      <span class="nav-icon">🏠</span><span class="nav-label">Dashboard</span>
+      <span class="nav-status wip" id="st-dashboard"></span>
+    </div>
+    <div class="nav-item" data-page="anagrafica" onclick="showPage('anagrafica',this)">
+      <span class="nav-icon">📋</span><span class="nav-label">Dati Progetto</span>
+      <span class="nav-status" id="st-anagrafica"></span>
+    </div>
+    <div class="nav-item" data-page="livello" onclick="showPage('livello',this)">
+      <span class="nav-icon">⚙️</span><span class="nav-label">Livello PPAP</span>
+      <span class="nav-status" id="st-livello"></span>
+    </div>
+  </div>
+
+  <div class="sidebar-section">
+    <div class="sidebar-section-title">Elementi Tecnici</div>
+    <div class="nav-item" data-page="dfd" onclick="showPage('dfd',this)">
+      <span class="nav-icon">🔄</span><span class="nav-label">Design Records & DFD</span>
+      <span class="nav-status" id="st-dfd"></span>
+    </div>
+    <div class="nav-item" data-page="fmea" onclick="showPage('fmea',this)">
+      <span class="nav-icon">⚠️</span><span class="nav-label">FMEA</span>
+      <span class="nav-status" id="st-fmea"></span>
+    </div>
+    <div class="nav-item" data-page="cpf" onclick="showPage('cpf',this)">
+      <span class="nav-icon">📊</span><span class="nav-label">Control Plan</span>
+      <span class="nav-status" id="st-cpf"></span>
+    </div>
+    <div class="nav-item" data-page="msa" onclick="showPage('msa',this)">
+      <span class="nav-icon">📐</span><span class="nav-label">MSA</span>
+      <span class="nav-status" id="st-msa"></span>
+    </div>
+    <div class="nav-item" data-page="spc" onclick="showPage('spc',this)">
+      <span class="nav-icon">📉</span><span class="nav-label">Studi SPC / Cpk</span>
+      <span class="nav-status" id="st-spc"></span>
+    </div>
+  </div>
+
+  <div class="sidebar-section">
+    <div class="sidebar-section-title">Produzione & Qualità</div>
+    <div class="nav-item" data-page="ppcp" onclick="showPage('ppcp',this)">
+      <span class="nav-icon">🏭</span><span class="nav-label">Processo Produttivo</span>
+      <span class="nav-status" id="st-ppcp"></span>
+    </div>
+    <div class="nav-item" data-page="campioni" onclick="showPage('campioni',this)">
+      <span class="nav-icon">🧪</span><span class="nav-label">Campioni & Lab</span>
+      <span class="nav-status" id="st-campioni"></span>
+    </div>
+    <div class="nav-item" data-page="dim" onclick="showPage('dim',this)">
+      <span class="nav-icon">📏</span><span class="nav-label">Rilievi Dimensionali</span>
+      <span class="nav-status" id="st-dim"></span>
+    </div>
+    <div class="nav-item" data-page="materiali" onclick="showPage('materiali',this)">
+      <span class="nav-icon">🧱</span><span class="nav-label">Materiali & Specifiche</span>
+      <span class="nav-status" id="st-materiali"></span>
+    </div>
+  </div>
+
+  <div class="sidebar-section">
+    <div class="sidebar-section-title">Approvazione</div>
+    <div class="nav-item" data-page="psw" onclick="showPage('psw',this)">
+      <span class="nav-icon">📜</span><span class="nav-label">PSW</span>
+      <span class="nav-status" id="st-psw"></span>
+    </div>
+    <div class="nav-item" data-page="firme" onclick="showPage('firme',this)">
+      <span class="nav-icon">✍️</span><span class="nav-label">Firme & Revisioni</span>
+      <span class="nav-status" id="st-firme"></span>
+    </div>
+    <div class="nav-item" data-page="archiviazione" onclick="showPage('archiviazione',this)">
+      <span class="nav-icon">🗄️</span><span class="nav-label">Archiviazione</span>
+      <span class="nav-status" id="st-archiviazione"></span>
+    </div>
+  </div>
+</nav>
+
+<!-- ── MAIN ──────────────────────────────────────────────────── -->
+<main id="main">
+
+<!-- ═══════════════════ DASHBOARD ═══════════════════════════ -->
+<div class="page active" id="page-dashboard">
+  <div class="page-header">
+    <div class="ph-left">
+      <div class="page-title">DASHBOARD PPAP</div>
+      <div class="page-subtitle">Production Part Approval Process · Panoramica generale</div>
+    </div>
+    <span class="page-badge">IATF 16949 · AIAG 4ª ED.</span>
+  </div>
+
+  <div class="info-box info">
+    <span class="ib-icon">ℹ️</span>
+    <div class="ib-body">
+      <div class="ib-title">Cos'è il PPAP?</div>
+      <div class="ib-text">Il <strong>Production Part Approval Process</strong> è una procedura standardizzata dell'industria automobilistica (AIAG/VDA) che definisce come un fornitore deve dimostrare la propria capacità produttiva al cliente prima dell'avvio della produzione. Ogni elemento del PPAP deve essere completato e approvato secondo il livello di presentazione concordato con il cliente.</div>
+    </div>
+  </div>
+
+  <div class="dash-grid">
+    <div class="dash-tile" onclick="showPage('anagrafica',null)">
+      <div class="dt-num" id="d-complete">0</div>
+      <div class="dt-label">Elementi Completati</div>
+      <div class="dt-sub">su 18 totali</div>
+    </div>
+    <div class="dash-tile" onclick="showPage('psw',null)">
+      <div class="dt-num" id="d-pct">0%</div>
+      <div class="dt-label">Avanzamento Globale</div>
+      <div class="dt-sub">Tutti gli elementi</div>
+    </div>
+    <div class="dash-tile" onclick="showPage('spc',null)">
+      <div class="dt-num" id="d-cpk">—</div>
+      <div class="dt-label">Cpk Minimo</div>
+      <div class="dt-sub">Indice di processo</div>
+    </div>
+    <div class="dash-tile" onclick="showPage('firme',null)">
+      <div class="dt-num" id="d-sign">0/0</div>
+      <div class="dt-label">Firme Raccolte</div>
+      <div class="dt-sub">Approvazioni</div>
+    </div>
+  </div>
+
+  <div class="section-title">Piano di Avanzamento PPAP</div>
+  <div class="timeline">
+    <div class="tl-item active" id="tl-1">
+      <div class="tl-title">FASE 1 — Avvio e Pianificazione</div>
+      <div class="tl-desc">Raccolta dati progetto, determinazione livello PPAP, nomina team, pianificazione attività.</div>
+    </div>
+    <div class="tl-item" id="tl-2">
+      <div class="tl-title">FASE 2 — Documentazione Tecnica</div>
+      <div class="tl-desc">Elaborazione Design Records, DFD, FMEA di processo, Control Plan, MSA.</div>
+    </div>
+    <div class="tl-item" id="tl-3">
+      <div class="tl-title">FASE 3 — Run di Produzione</div>
+      <div class="tl-desc">Esecuzione production trial run (min. 300 pz), raccolta dati SPC, analisi Cpk, approvazione campioni.</div>
+    </div>
+    <div class="tl-item" id="tl-4">
+      <div class="tl-title">FASE 4 — Validazione & Laboratorio</div>
+      <div class="tl-desc">Rilievi dimensionali su campioni, test di laboratorio, verifica specifiche materiali.</div>
+    </div>
+    <div class="tl-item" id="tl-5">
+      <div class="tl-title">FASE 5 — Compilazione PSW e Approvazione</div>
+      <div class="tl-desc">Compilazione Part Submission Warrant, raccolta firme, invio pacchetto al cliente.</div>
+    </div>
+    <div class="tl-item" id="tl-6">
+      <div class="tl-title">FASE 6 — Risposta Cliente e Archiviazione</div>
+      <div class="tl-desc">Ricezione disposizione cliente (Full Approval / Interim / Rejected), archiviazione documentazione.</div>
+    </div>
+  </div>
+
+  <div class="section-title">18 Elementi PPAP Standard</div>
+  <table class="data-table">
+    <thead>
+      <tr>
+        <th>#</th><th>Elemento</th><th>Liv.1</th><th>Liv.2</th><th>Liv.3</th><th>Liv.4</th><th>Liv.5</th><th>Stato</th>
+      </tr>
+    </thead>
+    <tbody id="elements-table">
+      <!-- filled by JS -->
+    </tbody>
+  </table>
+</div>
+
+<!-- ═══════════════════ ANAGRAFICA ═══════════════════════════ -->
+<div class="page" id="page-anagrafica">
+  <div class="page-header">
+    <div class="ph-left">
+      <div class="page-title">DATI PROGETTO</div>
+      <div class="page-subtitle">Anagrafica parte · cliente · fornitore · revisioni</div>
+    </div>
+    <span class="page-badge">STEP 1/6</span>
+  </div>
+
+  <div class="card">
+    <div class="card-header" onclick="toggleCard(this)">
+      <div class="ch-left"><span class="ch-num">1.1</span><span class="ch-title">Dati Parte / Componente</span></div>
+      <span class="ch-badge required">OBBLIGATORIO</span>
+    </div>
+    <div class="card-body">
+      <div class="form-grid">
+        <div class="field"><label>Codice Parte (Cliente)</label><input id="f-partno" type="text" placeholder="es. 1234567-00" oninput="updateHeader()"></div>
+        <div class="field"><label>Codice Parte (Fornitore)</label><input id="f-supppartno" type="text" placeholder="es. BOR-2024-001"></div>
+        <div class="field"><label>Descrizione Parte</label><input id="f-partname" type="text" placeholder="es. Coperchio pompa ABS" oninput="updateHeader()"></div>
+        <div class="field"><label>Revisione Disegno</label><input id="f-drawrev" type="text" placeholder="es. A, B, C..."></div>
+        <div class="field"><label>Data Disegno</label><input id="f-drawdate" type="date"></div>
+        <div class="field"><label>N° Disegno</label><input id="f-drawno" type="text" placeholder="es. DWG-12345-Rev.A"></div>
+      </div>
+    </div>
+  </div>
+
+  <div class="card">
+    <div class="card-header" onclick="toggleCard(this)">
+      <div class="ch-left"><span class="ch-num">1.2</span><span class="ch-title">Dati Cliente</span></div>
+      <span class="ch-badge required">OBBLIGATORIO</span>
+    </div>
+    <div class="card-body">
+      <div class="form-grid">
+        <div class="field"><label>Ragione Sociale Cliente</label><input id="f-client" type="text" placeholder="es. ABC Automotive S.p.A." oninput="updateHeader()"></div>
+        <div class="field"><label>Divisione / Stabilimento</label><input id="f-clientdiv" type="text" placeholder="es. Powertrain Division"></div>
+        <div class="field"><label>Contatto Qualità Cliente</label><input id="f-clientqa" type="text" placeholder="Nome e cognome"></div>
+        <div class="field"><label>Email Contatto</label><input id="f-clientemail" type="email" placeholder="qualita@cliente.com"></div>
+        <div class="field"><label>Indirizzo Stabilimento Consegna</label><input id="f-clientaddr" type="text" placeholder="Via..."></div>
+        <div class="field"><label>Codice Fornitore presso Cliente</label><input id="f-suppcode" type="text" placeholder="es. V-00123"></div>
+      </div>
+    </div>
+  </div>
+
+  <div class="card">
+    <div class="card-header" onclick="toggleCard(this)">
+      <div class="ch-left"><span class="ch-num">1.3</span><span class="ch-title">Dati Fornitore / Organizzazione</span></div>
+      <span class="ch-badge required">OBBLIGATORIO</span>
+    </div>
+    <div class="card-body">
+      <div class="form-grid">
+        <div class="field"><label>Ragione Sociale Fornitore</label><input id="f-supplier" type="text" placeholder="es. Industrie Borla S.p.A."></div>
+        <div class="field"><label>Stabilimento Produttivo</label><input id="f-supplant" type="text" placeholder="Via, CAP, Città"></div>
+        <div class="field"><label>Codice DUNS Fornitore</label><input id="f-duns" type="text" placeholder="9 cifre"></div>
+        <div class="field"><label>Referente PPAP (Fornitore)</label><input id="f-ppapowner" type="text" placeholder="Nome e cognome"></div>
+        <div class="field"><label>Telefono</label><input id="f-phone" type="tel" placeholder="+39 ..."></div>
+        <div class="field"><label>Email</label><input id="f-email" type="email" placeholder="qualita@fornitore.com"></div>
+      </div>
+    </div>
+  </div>
+
+  <div class="card">
+    <div class="card-header" onclick="toggleCard(this)">
+      <div class="ch-left"><span class="ch-num">1.4</span><span class="ch-title">Motivo Presentazione PPAP</span></div>
+      <span class="ch-badge required">OBBLIGATORIO</span>
+    </div>
+    <div class="card-body">
+      <div class="form-grid-2 form-grid">
+        <div class="field"><label>Motivo Primario</label>
+          <select id="f-reason">
+            <option value="">-- Seleziona --</option>
+            <option>Nuovo prodotto / New part</option>
+            <option>Cambio ingegneristico (ECR/ECO)</option>
+            <option>Cambio di materiale</option>
+            <option>Cambio di processo</option>
+            <option>Cambio di fornitore sub-tier</option>
+            <option>Cambio di stabilimento produttivo</option>
+            <option>Cambio di utensile / stampo</option>
+            <option>Correzione di non conformità</option>
+            <option>Produzione ferma per >12 mesi</option>
+            <option>Richiesta cliente</option>
+          </select>
+        </div>
+        <div class="field"><label>Numero ECR/ECO (se applicabile)</label><input id="f-ecr" type="text" placeholder="es. ECR-2024-0089"></div>
+        <div class="field"><label>Data Richiesta da Cliente</label><input id="f-reqdate" type="date"></div>
+        <div class="field"><label>Data Target Approvazione</label><input id="f-targetdate" type="date"></div>
+      </div>
+      <div class="field"><label>Note aggiuntive</label><textarea id="f-notes" placeholder="Descrizione del contesto e del motivo della presentazione..."></textarea></div>
+      <div class="btn-row">
+        <button class="btn btn-primary" onclick="markDone('anagrafica'); showPage('livello',null)">AVANTI: Livello PPAP →</button>
+        <button class="btn btn-outline" onclick="saveData()">💾 Salva bozza</button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ═══════════════════ LIVELLO PPAP ═══════════════════════════ -->
+<div class="page" id="page-livello">
+  <div class="page-header">
+    <div class="ph-left">
+      <div class="page-title">LIVELLO PPAP</div>
+      <div class="page-subtitle">Determinazione del livello di presentazione richiesto dal cliente</div>
+    </div>
+    <span class="page-badge">STEP 2/6</span>
+  </div>
+
+  <div class="info-box warning">
+    <span class="ib-icon">⚠️</span>
+    <div class="ib-body">
+      <div class="ib-title">Il Livello PPAP viene definito dal cliente</div>
+      <div class="ib-text">Il livello di presentazione determina quali documenti devono essere consegnati fisicamente al cliente (R = da inviare) e quali devono essere mantenuti disponibili dal fornitore (A = da conservare). Se non specificato dal cliente, il livello predefinito è il <strong>Livello 3</strong>.</div>
+    </div>
+  </div>
+
+  <div class="card">
+    <div class="card-header" onclick="toggleCard(this)">
+      <div class="ch-left"><span class="ch-num">2.1</span><span class="ch-title">Selezione Livello</span></div>
+      <span class="ch-badge required">OBBLIGATORIO</span>
+    </div>
+    <div class="card-body">
+      <div class="form-grid" style="grid-template-columns:1fr 1fr">
+        <div class="field"><label>Livello PPAP concordato con il cliente</label>
+          <select id="f-level" onchange="updateLevelTable(); updateHeader()">
+            <option value="">-- Seleziona livello --</option>
+            <option value="1">Livello 1 — Solo PSW</option>
+            <option value="2">Livello 2 — PSW + campioni + dati limitati</option>
+            <option value="3">Livello 3 — PSW + campioni + tutti i dati (standard)</option>
+            <option value="4">Livello 4 — PSW + altri requisiti definiti dal cliente</option>
+            <option value="5">Livello 5 — PSW + campioni + tutti i dati (review in loco)</option>
+          </select>
+        </div>
+        <div class="field"><label>Comunicazione scritta dal cliente?</label>
+          <select id="f-levelconf">
+            <option value="">-- Seleziona --</option>
+            <option>Sì — email / lettera allegata</option>
+            <option>Sì — nel contratto di fornitura</option>
+            <option>No — livello scelto per default</option>
+          </select>
+        </div>
+      </div>
+      <div id="level-desc" class="notice" style="margin-top:12px;">Seleziona un livello per vedere la descrizione.</div>
+    </div>
+  </div>
+
+  <div class="card">
+    <div class="card-header" onclick="toggleCard(this)">
+      <div class="ch-left"><span class="ch-num">2.2</span><span class="ch-title">Requisiti per Livello — Tabella Elementi</span></div>
+    </div>
+    <div class="card-body">
+      <table class="data-table" id="level-req-table">
+        <thead>
+          <tr><th>#</th><th>Elemento PPAP</th><th>Richiesto</th><th>Note</th></tr>
+        </thead>
+        <tbody id="level-req-body"></tbody>
+      </table>
+      <div style="font-family:var(--font-mono);font-size:10px;color:var(--text3);margin-top:6px;">
+        R = Da inviare al cliente · A = Da conservare in azienda · * = Come definito dal cliente
+      </div>
+    </div>
+  </div>
+
+  <div class="btn-row">
+    <button class="btn btn-primary" onclick="markDone('livello'); showPage('dfd',null)">AVANTI: Design Records →</button>
+  </div>
+</div>
+
+<!-- ═══════════════════ DFD / DESIGN RECORDS ═══════════════════ -->
+<div class="page" id="page-dfd">
+  <div class="page-header">
+    <div class="ph-left">
+      <div class="page-title">DESIGN RECORDS & DFD</div>
+      <div class="page-subtitle">Documenti di progettazione · Diagramma di Flusso di Processo</div>
+    </div>
+    <span class="page-badge">ELEMENTO 1-3</span>
+  </div>
+
+  <div class="card">
+    <div class="card-header" onclick="toggleCard(this)">
+      <div class="ch-left"><span class="ch-num">E1</span><span class="ch-title">Design Records — Registro Disegno</span></div>
+      <span class="ch-badge required">OBBLIGATORIO</span>
+    </div>
+    <div class="card-body">
+      <div class="info-box info"><span class="ib-icon">📄</span>
+        <div class="ib-body">
+          <div class="ib-title">Cosa includere nei Design Records</div>
+          <div class="ib-text">Tutti i disegni tecnici con tolleranze, specifiche dimensionali, requisiti funzionali e di aspetto. Devono essere approvati internamente e riportare revisione e data aggiornata.</div>
+        </div>
+      </div>
+      <div class="form-grid">
+        <div class="field"><label>N° Disegno Principale</label><input id="dr-num" type="text" placeholder="DWG-XXXXXXX"></div>
+        <div class="field"><label>Revisione</label><input id="dr-rev" type="text" placeholder="A"></div>
+        <div class="field"><label>Data Revisione</label><input id="dr-date" type="date"></div>
+        <div class="field"><label>Approvato da (Progettista)</label><input id="dr-approved" type="text" placeholder="Nome Cognome"></div>
+        <div class="field"><label>N° caratteristiche totali</label><input id="dr-totchar" type="number" placeholder="es. 47" min="0"></div>
+        <div class="field"><label>N° caratteristiche critiche (SC/CC)</label><input id="dr-critchar" type="number" placeholder="es. 5" min="0"></div>
+      </div>
+      <div class="section-title">Elenco Disegni / Documenti Tecnici</div>
+      <table class="data-table">
+        <thead><tr><th>#</th><th>Titolo Documento</th><th>N° Doc.</th><th>Rev.</th><th>Data</th><th>Tipo</th><th>Allegato</th></tr></thead>
+        <tbody id="dr-table">
+          <tr>
+            <td>1</td>
+            <td><input type="text" placeholder="Disegno assemblaggio"></td>
+            <td><input type="text" placeholder="DWG-001"></td>
+            <td><input type="text" placeholder="A"></td>
+            <td><input type="date"></td>
+            <td><select><option>Disegno</option><option>Specifica</option><option>Norma</option><option>CAD 3D</option><option>Altro</option></select></td>
+            <td><input type="text" placeholder="Sì / No"></td>
+          </tr>
+        </tbody>
+      </table>
+      <button class="btn btn-outline btn-sm" onclick="addRow('dr-table',7,'Disegno/Documento')">+ Aggiungi riga</button>
+    </div>
+  </div>
+
+  <div class="card">
+    <div class="card-header" onclick="toggleCard(this)">
+      <div class="ch-left"><span class="ch-num">E2</span><span class="ch-title">Engineering Change Documents</span></div>
+      <span class="ch-badge optional">SE APPLICABILE</span>
+    </div>
+    <div class="card-body">
+      <div class="form-grid">
+        <div class="field"><label>Applicabile?</label>
+          <select id="ecd-app"><option>No — Nuovo prodotto</option><option>Sì</option></select>
+        </div>
+        <div class="field"><label>N° ECR/ECO</label><input id="ecd-num" type="text" placeholder="ECR-2024-XXX"></div>
+        <div class="field"><label>Data ECR</label><input id="ecd-date" type="date"></div>
+        <div class="field"><label>Descrizione modifica</label><input id="ecd-desc" type="text" placeholder="Breve descrizione della modifica ingegneristica"></div>
+      </div>
+    </div>
+  </div>
+
+  <div class="card">
+    <div class="card-header" onclick="toggleCard(this)">
+      <div class="ch-left"><span class="ch-num">E3</span><span class="ch-title">Diagramma di Flusso di Processo (Process Flow Diagram)</span></div>
+      <span class="ch-badge required">OBBLIGATORIO</span>
+    </div>
+    <div class="card-body">
+      <div class="info-box info"><span class="ib-icon">🔄</span>
+        <div class="ib-body">
+          <div class="ib-title">Struttura del Process Flow Diagram</div>
+          <div class="ib-text">Il diagramma deve rappresentare l'intero flusso produttivo dal ricevimento materie prime alla spedizione, inclusi controlli in processo, operazioni di ispezione, aree di stoccaggio e identificazione dei punti di caratteristiche speciali.</div>
+        </div>
+      </div>
+      <div class="form-grid">
+        <div class="field"><label>N° Documento PFD</label><input id="pfd-num" type="text" placeholder="PFD-001"></div>
+        <div class="field"><label>Rev.</label><input id="pfd-rev" type="text" placeholder="A"></div>
+        <div class="field"><label>Data</label><input id="pfd-date" type="date"></div>
+        <div class="field"><label>Elaborato da</label><input id="pfd-author" type="text"></div>
+      </div>
+      <div class="section-title">Passi del Processo</div>
+      <table class="data-table">
+        <thead><tr><th>Step</th><th>Operazione</th><th>Macchina / Reparto</th><th>Tipo</th><th>Car. Speciali</th><th>Output</th></tr></thead>
+        <tbody id="pfd-table">
+          <tr><td>10</td><td><input type="text" placeholder="Ricevimento MP"></td><td><input type="text" placeholder="Magazzino"></td><td><select><option>Operazione</option><option>Ispezione</option><option>Trasporto</option><option>Magazzino</option><option>Ritardo</option></select></td><td><input type="text" placeholder="—"></td><td><input type="text" placeholder="MP Controllata"></td></tr>
+          <tr><td>20</td><td><input type="text" placeholder="Stampaggio ad iniezione"></td><td><input type="text" placeholder="Pressa XYZ"></td><td><select><option>Operazione</option><option>Ispezione</option><option>Trasporto</option><option>Magazzino</option><option>Ritardo</option></select></td><td><input type="text" placeholder="Peso-shot, T-stampo"></td><td><input type="text" placeholder="Pezzo grezzo"></td></tr>
+          <tr><td>30</td><td><input type="text" placeholder="Controllo visivo 100%"></td><td><input type="text" placeholder="Banco controllo"></td><td><select><option>Ispezione</option><option>Operazione</option><option>Trasporto</option><option>Magazzino</option><option>Ritardo</option></select></td><td><input type="text" placeholder="—"></td><td><input type="text" placeholder="Pezzo OK/KO"></td></tr>
+        </tbody>
+      </table>
+      <button class="btn btn-outline btn-sm" onclick="addPFDRow()">+ Aggiungi step</button>
+      <div class="btn-row">
+        <button class="btn btn-primary" onclick="markDone('dfd'); showPage('fmea',null)">AVANTI: FMEA →</button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ═══════════════════ FMEA ═══════════════════════════════════ -->
+<div class="page" id="page-fmea">
+  <div class="page-header">
+    <div class="ph-left">
+      <div class="page-title">FMEA — ANALISI MODI DI GUASTO</div>
+      <div class="page-subtitle">Failure Mode and Effects Analysis · Processo (PFMEA)</div>
+    </div>
+    <span class="page-badge">ELEMENTO 4</span>
+  </div>
+
+  <div class="info-box warning"><span class="ib-icon">⚠️</span>
+    <div class="ib-body">
+      <div class="ib-title">Riferimento Normativo: AIAG-VDA FMEA 1ª Ed. 2019</div>
+      <div class="ib-text">La PFMEA deve analizzare ogni step del processo identificando i potenziali modi di guasto, gli effetti sul cliente, le cause radice e i controlli attuali. Il Risk Priority Number (RPN) = Gravità × Occorrenza × Rilevabilità. Azioni correttive richieste per RPN > 100 o G ≥ 9.</div>
+    </div>
+  </div>
+
+  <div class="card">
+    <div class="card-header" onclick="toggleCard(this)">
+      <div class="ch-left"><span class="ch-num">E4</span><span class="ch-title">PFMEA — Intestazione Documento</span></div>
+      <span class="ch-badge required">OBBLIGATORIO</span>
+    </div>
+    <div class="card-body">
+      <div class="form-grid">
+        <div class="field"><label>N° Documento FMEA</label><input id="fmea-num" type="text" placeholder="FMEA-P-001"></div>
+        <div class="field"><label>Rev.</label><input id="fmea-rev" type="text" placeholder="A"></div>
+        <div class="field"><label>Data Creazione</label><input id="fmea-date" type="date"></div>
+        <div class="field"><label>Processo Analizzato</label><input id="fmea-proc" type="text" placeholder="es. Stampaggio ad Iniezione"></div>
+        <div class="field"><label>Responsabile FMEA</label><input id="fmea-owner" type="text"></div>
+        <div class="field"><label>Team FMEA</label><input id="fmea-team" type="text" placeholder="Qualità, Produzione, Manutenzione..."></div>
+      </div>
+    </div>
+  </div>
+
+  <div class="card">
+    <div class="card-header" onclick="toggleCard(this)">
+      <div class="ch-left"><span class="ch-num">4.1</span><span class="ch-title">Tabella PFMEA con calcolo RPN</span></div>
+    </div>
+    <div class="card-body">
+      <div style="overflow-x:auto;">
+      <table class="data-table" id="fmea-table" style="min-width:1100px;">
+        <thead>
+          <tr>
+            <th>Funzione Processo</th>
+            <th>Modo Guasto Potenziale</th>
+            <th>Effetto sul Cliente</th>
+            <th>G<br><span style="font-size:9px">1-10</span></th>
+            <th>Causa Potenziale</th>
+            <th>O<br><span style="font-size:9px">1-10</span></th>
+            <th>Controlli Attuali Prevenzione</th>
+            <th>Controlli Attuali Rilevamento</th>
+            <th>R<br><span style="font-size:9px">1-10</span></th>
+            <th>RPN</th>
+            <th>Azione Raccomandata</th>
+            <th>Resp.</th>
+            <th>RPN Nuovo</th>
+          </tr>
+        </thead>
+        <tbody id="fmea-body">
+          <tr>
+            <td><input type="text" placeholder="Stampaggio"></td>
+            <td><input type="text" placeholder="Dimensione fuori tolleranza"></td>
+            <td><input type="text" placeholder="Non montaggio"></td>
+            <td><input type="number" min="1" max="10" class="rpn-g" onchange="calcRPN(this)" style="width:40px"></td>
+            <td><input type="text" placeholder="Stampo usurato"></td>
+            <td><input type="number" min="1" max="10" class="rpn-o" onchange="calcRPN(this)" style="width:40px"></td>
+            <td><input type="text" placeholder="Manutenzione preventiva"></td>
+            <td><input type="text" placeholder="Calibro di controllo"></td>
+            <td><input type="number" min="1" max="10" class="rpn-r" onchange="calcRPN(this)" style="width:40px"></td>
+            <td class="rpn-val" style="font-weight:600;color:var(--accent)">—</td>
+            <td><input type="text" placeholder="Sostituire stampo ogni 50k cicli"></td>
+            <td><input type="text" placeholder="Ing. Produzione"></td>
+            <td class="rpn-new">—</td>
+          </tr>
+        </tbody>
+      </table>
+      </div>
+      <button class="btn btn-outline btn-sm" onclick="addFMEARow()">+ Aggiungi riga</button>
+
+      <div class="section-title">Scala di valutazione RPN</div>
+      <div class="form-grid form-grid-3">
+        <div class="info-box info" style="flex-direction:column;gap:6px;padding:10px;">
+          <div style="font-family:var(--font-mono);font-size:10px;color:var(--blue);margin-bottom:4px;">GRAVITÀ (G)</div>
+          <div style="font-size:11px;color:var(--text2);line-height:1.7;">
+            9-10: Sicurezza / funzione persa<br>7-8: Degradazione funzione<br>5-6: Cliente insoddisfatto<br>3-4: Disturbo minore<br>1-2: Impercettibile
+          </div>
+        </div>
+        <div class="info-box info" style="flex-direction:column;gap:6px;padding:10px;">
+          <div style="font-family:var(--font-mono);font-size:10px;color:var(--blue);margin-bottom:4px;">OCCORRENZA (O)</div>
+          <div style="font-size:11px;color:var(--text2);line-height:1.7;">
+            9-10: &gt;1/2 (frequentissimo)<br>7-8: 1/20 — 1/50<br>5-6: 1/400 — 1/2000<br>3-4: 1/15000 — 1/150000<br>1-2: Praticamente impossibile
+          </div>
+        </div>
+        <div class="info-box info" style="flex-direction:column;gap:6px;padding:10px;">
+          <div style="font-family:var(--font-mono);font-size:10px;color:var(--blue);margin-bottom:4px;">RILEVABILITÀ (R)</div>
+          <div style="font-size:11px;color:var(--text2);line-height:1.7;">
+            9-10: Controllo impossibile<br>7-8: Difficile rilevare<br>5-6: Controllo moderato<br>3-4: Alta probabilità rilevamento<br>1-2: Certamente rilevato
+          </div>
+        </div>
+      </div>
+      <div class="btn-row">
+        <button class="btn btn-primary" onclick="markDone('fmea'); showPage('cpf',null)">AVANTI: Control Plan →</button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ═══════════════════ CONTROL PLAN ═══════════════════════════ -->
+<div class="page" id="page-cpf">
+  <div class="page-header">
+    <div class="ph-left">
+      <div class="page-title">CONTROL PLAN</div>
+      <div class="page-subtitle">Piano di Controllo di Processo · Elemento PPAP #5</div>
+    </div>
+    <span class="page-badge">ELEMENTO 5</span>
+  </div>
+
+  <div class="card">
+    <div class="card-header" onclick="toggleCard(this)">
+      <div class="ch-left"><span class="ch-num">E5</span><span class="ch-title">Intestazione Control Plan</span></div>
+      <span class="ch-badge required">OBBLIGATORIO</span>
+    </div>
+    <div class="card-body">
+      <div class="form-grid">
+        <div class="field"><label>N° Control Plan</label><input id="cp-num" type="text" placeholder="CP-001"></div>
+        <div class="field"><label>Rev.</label><input id="cp-rev" type="text" placeholder="A"></div>
+        <div class="field"><label>Data</label><input id="cp-date" type="date"></div>
+        <div class="field"><label>Tipo</label><select id="cp-type"><option>Prototipo</option><option>Pre-lancio</option><option>Produzione</option></select></div>
+        <div class="field"><label>Responsabile</label><input id="cp-owner" type="text"></div>
+        <div class="field"><label>Approvato Qualità Cliente</label><input id="cp-custapp" type="text"></div>
+      </div>
+    </div>
+  </div>
+
+  <div class="card">
+    <div class="card-header" onclick="toggleCard(this)">
+      <div class="ch-left"><span class="ch-num">5.1</span><span class="ch-title">Tabella Control Plan</span></div>
+    </div>
+    <div class="card-body">
+      <div style="overflow-x:auto;">
+      <table class="data-table" style="min-width:1200px;">
+        <thead>
+          <tr>
+            <th>N° Step</th><th>Operazione / Processo</th><th>Macchina</th>
+            <th>Caratteristica Prodotto</th><th>Caratteristica Processo</th>
+            <th>Classe<br>(SC/CC)</th><th>Specifiche / Tolleranze</th>
+            <th>Metodo di Misura</th><th>Frequenza</th><th>Dim. Camp.</th>
+            <th>Piano di Reazione</th>
+          </tr>
+        </thead>
+        <tbody id="cp-table">
+          <tr>
+            <td><input type="text" value="10"></td>
+            <td><input type="text" placeholder="Stampaggio"></td>
+            <td><input type="text" placeholder="Pressa 150T"></td>
+            <td><input type="text" placeholder="Spessore parete"></td>
+            <td><input type="text" placeholder="T° stampo"></td>
+            <td><select><option>—</option><option>SC</option><option>CC</option><option>KPC</option></select></td>
+            <td><input type="text" placeholder="2.5±0.2 mm"></td>
+            <td><input type="text" placeholder="Calibro ±0.01"></td>
+            <td><input type="text" placeholder="1/2h"></td>
+            <td><input type="text" placeholder="n=5"></td>
+            <td><input type="text" placeholder="Stop + Quarantena + SNC"></td>
+          </tr>
+        </tbody>
+      </table>
+      </div>
+      <button class="btn btn-outline btn-sm" onclick="addCPRow()">+ Aggiungi riga</button>
+      <div class="btn-row">
+        <button class="btn btn-primary" onclick="markDone('cpf'); showPage('msa',null)">AVANTI: MSA →</button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ═══════════════════ MSA ═══════════════════════════════════ -->
+<div class="page" id="page-msa">
+  <div class="page-header">
+    <div class="ph-left">
+      <div class="page-title">MSA — ANALISI SISTEMA DI MISURA</div>
+      <div class="page-subtitle">Measurement System Analysis · Gage R&R · Elemento #6</div>
+    </div>
+    <span class="page-badge">ELEMENTO 6</span>
+  </div>
+
+  <div class="info-box info"><span class="ib-icon">📐</span>
+    <div class="ib-body">
+      <div class="ib-title">Criteri di Accettazione MSA (AIAG MSA 4ª Ed.)</div>
+      <div class="ib-text">
+        <strong>%GRR &lt; 10%</strong>: Sistema accettabile · 
+        <strong>10% ≤ %GRR &lt; 30%</strong>: Accettabile con riserva (valutare con cliente) · 
+        <strong>%GRR ≥ 30%</strong>: Sistema inaccettabile — azione correttiva richiesta
+      </div>
+    </div>
+  </div>
+
+  <div class="card">
+    <div class="card-header" onclick="toggleCard(this)">
+      <div class="ch-left"><span class="ch-num">E6</span><span class="ch-title">Studio Gage R&R — Calcolatore</span></div>
+      <span class="ch-badge required">OBBLIGATORIO</span>
+    </div>
+    <div class="card-body">
+      <div class="form-grid">
+        <div class="field"><label>Strumento di misura</label><input id="msa-tool" type="text" placeholder="es. Calibro digitale 0-150mm"></div>
+        <div class="field"><label>Caratteristica misurata</label><input id="msa-char" type="text" placeholder="es. Diametro foro Ø12"></div>
+        <div class="field"><label>N° Operatori (k)</label><input id="msa-k" type="number" value="3" min="2" max="5" onchange="calcMSA()"></div>
+        <div class="field"><label>N° Parti (n)</label><input id="msa-n" type="number" value="10" min="5" max="30" onchange="calcMSA()"></div>
+        <div class="field"><label>N° Repliche (r)</label><input id="msa-r" type="number" value="2" min="2" max="3" onchange="calcMSA()"></div>
+        <div class="field"><label>Tolleranza parte (USL-LSL)</label><input id="msa-tol" type="number" placeholder="es. 0.4" step="0.001" onchange="calcMSA()"></div>
+      </div>
+
+      <div class="section-title">Inserimento misure (Operatore A — prime 3 parti per semplicità)</div>
+      <div class="notice">Inserire le misure rilevate. Il sistema calcolerà automaticamente i parametri MSA. Per uno studio completo allegare il foglio dati Excel.</div>
+      <div class="form-grid form-grid-3">
+        <div><div class="section-title" style="font-size:9px">OPERATORE A — REPLICA 1</div>
+          <div class="form-grid" style="grid-template-columns:repeat(5,1fr)">
+            <div class="field" style="gap:2px"><label style="font-size:9px">P1</label><input type="number" class="msa-val" id="mA1p1" step="0.001" onchange="calcMSA()"></div>
+            <div class="field" style="gap:2px"><label style="font-size:9px">P2</label><input type="number" class="msa-val" id="mA1p2" step="0.001" onchange="calcMSA()"></div>
+            <div class="field" style="gap:2px"><label style="font-size:9px">P3</label><input type="number" class="msa-val" id="mA1p3" step="0.001" onchange="calcMSA()"></div>
+            <div class="field" style="gap:2px"><label style="font-size:9px">P4</label><input type="number" class="msa-val" id="mA1p4" step="0.001" onchange="calcMSA()"></div>
+            <div class="field" style="gap:2px"><label style="font-size:9px">P5</label><input type="number" class="msa-val" id="mA1p5" step="0.001" onchange="calcMSA()"></div>
+          </div>
+        </div>
+        <div><div class="section-title" style="font-size:9px">OPERATORE A — REPLICA 2</div>
+          <div class="form-grid" style="grid-template-columns:repeat(5,1fr)">
+            <div class="field" style="gap:2px"><label style="font-size:9px">P1</label><input type="number" class="msa-val" id="mA2p1" step="0.001" onchange="calcMSA()"></div>
+            <div class="field" style="gap:2px"><label style="font-size:9px">P2</label><input type="number" class="msa-val" id="mA2p2" step="0.001" onchange="calcMSA()"></div>
+            <div class="field" style="gap:2px"><label style="font-size:9px">P3</label><input type="number" class="msa-val" id="mA2p3" step="0.001" onchange="calcMSA()"></div>
+            <div class="field" style="gap:2px"><label style="font-size:9px">P4</label><input type="number" class="msa-val" id="mA2p4" step="0.001" onchange="calcMSA()"></div>
+            <div class="field" style="gap:2px"><label style="font-size:9px">P5</label><input type="number" class="msa-val" id="mA2p5" step="0.001" onchange="calcMSA()"></div>
+          </div>
+        </div>
+        <div>
+          <div id="msa-result" class="calc-area">
+            <div style="color:var(--text3);font-size:11px">Inserire le misure per calcolare il %GRR</div>
+          </div>
+        </div>
+      </div>
+      <div class="btn-row">
+        <button class="btn btn-outline" onclick="calcMSA()">🔢 Calcola MSA</button>
+        <button class="btn btn-primary" onclick="markDone('msa'); showPage('spc',null)">AVANTI: SPC / Cpk →</button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ═══════════════════ SPC / CPK ═══════════════════════════════ -->
+<div class="page" id="page-spc">
+  <div class="page-header">
+    <div class="ph-left">
+      <div class="page-title">STUDI SPC — INDICI Cpk</div>
+      <div class="page-subtitle">Statistical Process Control · Capability Study · Elementi #9-10</div>
+    </div>
+    <span class="page-badge">ELEMENTI 9-10</span>
+  </div>
+
+  <div class="info-box warning"><span class="ib-icon">📊</span>
+    <div class="ib-body">
+      <div class="ib-title">Requisiti Capability — AIAG SPC 2ª Ed.</div>
+      <div class="ib-text"><strong>Cpk ≥ 1.67</strong> per caratteristiche speciali SC/CC (pre-lancio) · <strong>Cpk ≥ 1.33</strong> per produzione standard · <strong>Ppk ≥ 1.67</strong> per studi preliminari (production trial run). Minimo <strong>300 pezzi</strong> per lo studio di capability.</div>
+    </div>
+  </div>
+
+  <div class="card">
+    <div class="card-header" onclick="toggleCard(this)">
+      <div class="ch-left"><span class="ch-num">E9-10</span><span class="ch-title">Calcolatore Cpk / Ppk interattivo</span></div>
+      <span class="ch-badge required">OBBLIGATORIO</span>
+    </div>
+    <div class="card-body">
+      <div class="form-grid form-grid-2">
+        <div>
+          <div class="form-grid">
+            <div class="field"><label>Caratteristica</label><input id="spc-char" type="text" placeholder="es. Spessore parete"></div>
+            <div class="field"><label>Unità</label><input id="spc-unit" type="text" placeholder="mm"></div>
+            <div class="field"><label>Limite Superiore (USL)</label><input id="spc-usl" type="number" step="0.001" oninput="calcCpk()"></div>
+            <div class="field"><label>Limite Inferiore (LSL)</label><input id="spc-lsl" type="number" step="0.001" oninput="calcCpk()"></div>
+            <div class="field"><label>Valore Nominale</label><input id="spc-nom" type="number" step="0.001" oninput="calcCpk()"></div>
+          </div>
+          <div class="section-title">Inserisci dati campione (separati da virgola o spazio)</div>
+          <div class="field"><label>Dati misurati (min. 25 valori)</label>
+            <textarea id="spc-data" rows="4" placeholder="es. 2.45, 2.47, 2.43, 2.46, 2.44, 2.48..." oninput="calcCpk()"></textarea>
+          </div>
+          <button class="btn btn-outline btn-sm" onclick="fillSampleData()">📊 Carica dati esempio</button>
+        </div>
+        <div>
+          <div id="cpk-results" class="calc-area" style="height:100%;min-height:220px;">
+            <div style="color:var(--text3);font-size:11px;">Inserire USL, LSL e dati per calcolare la capability</div>
+          </div>
+        </div>
+      </div>
+
+      <div class="section-title">Registro caratteristiche per PPAP</div>
+      <table class="data-table" id="spc-reg-table">
+        <thead><tr><th>Caratteristica</th><th>Classe</th><th>LSL</th><th>Nominale</th><th>USL</th><th>n campione</th><th>Media x̄</th><th>Std Dev σ</th><th>Cp</th><th>Cpk</th><th>Ppk</th><th>Esito</th></tr></thead>
+        <tbody id="spc-reg-body">
+          <tr>
+            <td><input type="text" placeholder="Spessore parete"></td>
+            <td><select><option>Standard</option><option>SC</option><option>CC</option></select></td>
+            <td><input type="number" step="0.001"></td>
+            <td><input type="number" step="0.001"></td>
+            <td><input type="number" step="0.001"></td>
+            <td><input type="number"></td>
+            <td><input type="number" step="0.001"></td>
+            <td><input type="number" step="0.001"></td>
+            <td><input type="number" step="0.001"></td>
+            <td><input type="number" step="0.001"></td>
+            <td><input type="number" step="0.001"></td>
+            <td><select><option>OK</option><option>OK con riserva</option><option>NOK</option></select></td>
+          </tr>
+        </tbody>
+      </table>
+      <button class="btn btn-outline btn-sm" onclick="addRow('spc-reg-body',12,'Caratteristica')">+ Aggiungi caratteristica</button>
+      <div class="btn-row">
+        <button class="btn btn-primary" onclick="markDone('spc'); showPage('ppcp',null)">AVANTI: Processo Produttivo →</button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ═══════════════════ PROCESSO PRODUTTIVO ════════════════════ -->
+<div class="page" id="page-ppcp">
+  <div class="page-header">
+    <div class="ph-left">
+      <div class="page-title">PROCESSO PRODUTTIVO</div>
+      <div class="page-subtitle">Production Trial Run · Qualifiche macchine · Elementi #7-8</div>
+    </div>
+    <span class="page-badge">ELEMENTI 7-8</span>
+  </div>
+
+  <div class="card">
+    <div class="card-header" onclick="toggleCard(this)">
+      <div class="ch-left"><span class="ch-num">E7</span><span class="ch-title">Production Trial Run</span></div>
+      <span class="ch-badge required">OBBLIGATORIO</span>
+    </div>
+    <div class="card-body">
+      <div class="info-box warning"><span class="ib-icon">🏭</span>
+        <div class="ib-body">
+          <div class="ib-title">Requisiti Production Trial Run</div>
+          <div class="ib-text">Il run deve essere eseguito con gli <strong>stessi operatori, macchine, attrezzature, stampi e materiali</strong> previsti per la produzione di serie. La quantità minima standard è di <strong>300 pezzi</strong> (o quanto richiesto dal cliente). I dati raccolti durante il run alimentano gli studi SPC/Cpk.</div>
+        </div>
+      </div>
+      <div class="form-grid">
+        <div class="field"><label>Data del Production Trial Run</label><input id="ptr-date" type="date"></div>
+        <div class="field"><label>Quantità prodotta</label><input id="ptr-qty" type="number" placeholder="min. 300" min="0"></div>
+        <div class="field"><label>Quantità accettata</label><input id="ptr-ok" type="number" min="0"></div>
+        <div class="field"><label>Scarti</label><input id="ptr-nok" type="number" min="0"></div>
+        <div class="field"><label>Macchina / Pressa</label><input id="ptr-machine" type="text" placeholder="es. Pressa 150T - ID: P015"></div>
+        <div class="field"><label>Stampo N°</label><input id="ptr-mold" type="text" placeholder="es. MOLD-2024-001"></div>
+        <div class="field"><label>Materiale (lotto)</label><input id="ptr-mat" type="text" placeholder="Codice + lotto materiale"></div>
+        <div class="field"><label>Responsabile Produzione</label><input id="ptr-resp" type="text"></div>
+      </div>
+      <div class="field"><label>Note sul run</label><textarea id="ptr-notes" placeholder="Osservazioni, anomalie, setup conditions..."></textarea></div>
+    </div>
+  </div>
+
+  <div class="card">
+    <div class="card-header" onclick="toggleCard(this)">
+      <div class="ch-left"><span class="ch-num">E8</span><span class="ch-title">Qualifiche Macchine e Attrezzature</span></div>
+    </div>
+    <div class="card-body">
+      <table class="data-table">
+        <thead><tr><th>Macchina / Attrezzatura</th><th>ID / N° Matric.</th><th>Data ultima calibrazione</th><th>Prossima calibrazione</th><th>Certificato n°</th><th>Stato</th></tr></thead>
+        <tbody id="mach-table">
+          <tr>
+            <td><input type="text" placeholder="Pressa ad iniezione"></td>
+            <td><input type="text" placeholder="P-015"></td>
+            <td><input type="date"></td><td><input type="date"></td>
+            <td><input type="text" placeholder="CAL-2024-xxx"></td>
+            <td><select><option>OK</option><option>In scadenza</option><option>Scaduto</option></select></td>
+          </tr>
+          <tr>
+            <td><input type="text" placeholder="Calibro digitale"></td>
+            <td><input type="text" placeholder="STR-042"></td>
+            <td><input type="date"></td><td><input type="date"></td>
+            <td><input type="text" placeholder="CAL-2024-xxx"></td>
+            <td><select><option>OK</option><option>In scadenza</option><option>Scaduto</option></select></td>
+          </tr>
+        </tbody>
+      </table>
+      <button class="btn btn-outline btn-sm" onclick="addRow('mach-table',6,'Macchina')">+ Aggiungi</button>
+      <div class="btn-row">
+        <button class="btn btn-primary" onclick="markDone('ppcp'); showPage('campioni',null)">AVANTI: Campioni & Lab →</button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ═══════════════════ CAMPIONI & LAB ════════════════════════ -->
+<div class="page" id="page-campioni">
+  <div class="page-header">
+    <div class="ph-left">
+      <div class="page-title">CAMPIONI & LABORATORIO</div>
+      <div class="page-subtitle">Campioni iniziali · Aspetto · Test di laboratorio · Elemento #11-12-13</div>
+    </div>
+    <span class="page-badge">ELEMENTI 11-13</span>
+  </div>
+
+  <div class="card">
+    <div class="card-header" onclick="toggleCard(this)">
+      <div class="ch-left"><span class="ch-num">E11</span><span class="ch-title">Initial Sample Report — Campioni Iniziali</span></div>
+      <span class="ch-badge required">OBBLIGATORIO</span>
+    </div>
+    <div class="card-body">
+      <div class="form-grid">
+        <div class="field"><label>Numero campioni inviati al cliente</label><input id="samp-qty" type="number" placeholder="es. 3" min="0"></div>
+        <div class="field"><label>Data invio campioni</label><input id="samp-date" type="date"></div>
+        <div class="field"><label>N° campioni trattenuti dal fornitore</label><input id="samp-retain" type="number" placeholder="es. 3" min="0"></div>
+        <div class="field"><label>Posizione stampo (cavità)</label><input id="samp-cavity" type="text" placeholder="es. Cav. 1, 2, 3 — tutte le cavità"></div>
+        <div class="field"><label>Identificazione campione</label><input id="samp-id" type="text" placeholder="Etichetta / Numero seriale"></div>
+        <div class="field"><label>Data scadenza campioni</label><input id="samp-exp" type="date"></div>
+      </div>
+    </div>
+  </div>
+
+  <div class="card">
+    <div class="card-header" onclick="toggleCard(this)">
+      <div class="ch-left"><span class="ch-num">E12</span><span class="ch-title">Approvazione Aspetto (AAR)</span></div>
+      <span class="ch-badge optional">SE APPLICABILE</span>
+    </div>
+    <div class="card-body">
+      <div class="form-grid">
+        <div class="field"><label>Applicabile (prodotto con requisiti estetici)?</label>
+          <select id="aar-app"><option>No</option><option>Sì</option></select>
+        </div>
+        <div class="field"><label>Colore (codice RAL/Pantone)</label><input id="aar-color" type="text" placeholder="es. RAL 7035"></div>
+        <div class="field"><label>Finitura superficie</label><input id="aar-finish" type="text" placeholder="es. Lucida / Opaca / Texture SPI-B1"></div>
+        <div class="field"><label>Texture / Grainage</label><input id="aar-texture" type="text" placeholder="es. Mold-Tech MT-11010"></div>
+        <div class="field"><label>Esito AAR</label><select id="aar-result"><option>—</option><option>Approvato</option><option>Approvato condizionatamente</option><option>Non approvato</option></select></div>
+        <div class="field"><label>Data approvazione AAR</label><input id="aar-date" type="date"></div>
+      </div>
+    </div>
+  </div>
+
+  <div class="card">
+    <div class="card-header" onclick="toggleCard(this)">
+      <div class="ch-left"><span class="ch-num">E13</span><span class="ch-title">Report di Laboratorio</span></div>
+      <span class="ch-badge required">OBBLIGATORIO</span>
+    </div>
+    <div class="card-body">
+      <div class="notice">Inserire i risultati dei test di laboratorio eseguiti sul materiale/prodotto secondo le specifiche del cliente o norme applicabili.</div>
+      <table class="data-table">
+        <thead><tr><th>Test</th><th>Norma / Metodo</th><th>Unità</th><th>Spec. Min.</th><th>Spec. Max.</th><th>Risultato</th><th>Esito</th><th>Lab / Data</th></tr></thead>
+        <tbody id="lab-table">
+          <tr>
+            <td><input type="text" placeholder="Resistenza trazione"></td>
+            <td><input type="text" placeholder="ISO 527"></td>
+            <td><input type="text" placeholder="MPa"></td>
+            <td><input type="number" placeholder="40"></td>
+            <td><input type="number" placeholder="—"></td>
+            <td><input type="number" placeholder="52.3"></td>
+            <td><select><option>OK</option><option>NOK</option><option>N/A</option></select></td>
+            <td><input type="text" placeholder="Lab XYZ / 15/01/2024"></td>
+          </tr>
+          <tr>
+            <td><input type="text" placeholder="Resistenza all'urto Charpy"></td>
+            <td><input type="text" placeholder="ISO 179"></td>
+            <td><input type="text" placeholder="kJ/m²"></td>
+            <td><input type="number" placeholder="5"></td>
+            <td><input type="number" placeholder="—"></td>
+            <td><input type="number" placeholder="7.2"></td>
+            <td><select><option>OK</option><option>NOK</option><option>N/A</option></select></td>
+            <td><input type="text" placeholder="Lab XYZ / 15/01/2024"></td>
+          </tr>
+        </tbody>
+      </table>
+      <button class="btn btn-outline btn-sm" onclick="addRow('lab-table',8,'Test')">+ Aggiungi test</button>
+      <div class="btn-row">
+        <button class="btn btn-primary" onclick="markDone('campioni'); showPage('dim',null)">AVANTI: Rilievi Dimensionali →</button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ═══════════════════ RILIEVI DIMENSIONALI ══════════════════ -->
+<div class="page" id="page-dim">
+  <div class="page-header">
+    <div class="ph-left">
+      <div class="page-title">RILIEVI DIMENSIONALI</div>
+      <div class="page-subtitle">Dimensional Results · Elemento #14 · Tutte le caratteristiche</div>
+    </div>
+    <span class="page-badge">ELEMENTO 14</span>
+  </div>
+
+  <div class="card">
+    <div class="card-header" onclick="toggleCard(this)">
+      <div class="ch-left"><span class="ch-num">E14</span><span class="ch-title">Risultati Dimensionali Completi</span></div>
+      <span class="ch-badge required">OBBLIGATORIO</span>
+    </div>
+    <div class="card-body">
+      <div class="info-box info"><span class="ib-icon">📏</span>
+        <div class="ib-body">
+          <div class="ib-title">Requisiti per i rilievi dimensionali</div>
+          <div class="ib-text">Devono essere rilevate <strong>tutte le quote del disegno</strong> su almeno un campione per cavità stampo. Le caratteristiche speciali devono essere misurate su un numero maggiore di campioni (secondo quanto indicato nel Control Plan). Tutti i risultati devono essere registrati con il valore nominale, tolleranza, valore misurato ed esito.</div>
+        </div>
+      </div>
+      <div class="form-grid form-grid-3">
+        <div class="field"><label>N° campioni misurati</label><input id="dim-nsamp" type="number" placeholder="es. 5" min="1"></div>
+        <div class="field"><label>Strumento di misura principale</label><input id="dim-tool" type="text" placeholder="es. CMM ZEISS Contura"></div>
+        <div class="field"><label>Data misura</label><input id="dim-date" type="date"></div>
+      </div>
+      <div style="overflow-x:auto;margin-top:12px;">
+      <table class="data-table" style="min-width:900px;">
+        <thead>
+          <tr>
+            <th>N° Quot.</th><th>Descrizione</th><th>Nominale</th><th>Tol. +</th><th>Tol. −</th>
+            <th>Samp.1</th><th>Samp.2</th><th>Samp.3</th><th>Samp.4</th><th>Samp.5</th>
+            <th>Min.</th><th>Max.</th><th>Esito</th>
+          </tr>
+        </thead>
+        <tbody id="dim-table">
+          <tr>
+            <td><input type="text" value="1"></td>
+            <td><input type="text" placeholder="Lungh. totale"></td>
+            <td><input type="number" step="0.01" class="dim-nom" onchange="checkDim(this)"></td>
+            <td><input type="number" step="0.01" class="dim-tol-p" onchange="checkDim(this)" placeholder="0.2"></td>
+            <td><input type="number" step="0.01" class="dim-tol-n" onchange="checkDim(this)" placeholder="0.2"></td>
+            <td><input type="number" step="0.01" class="dim-s" onchange="checkDim(this)"></td>
+            <td><input type="number" step="0.01" class="dim-s" onchange="checkDim(this)"></td>
+            <td><input type="number" step="0.01" class="dim-s" onchange="checkDim(this)"></td>
+            <td><input type="number" step="0.01" class="dim-s" onchange="checkDim(this)"></td>
+            <td><input type="number" step="0.01" class="dim-s" onchange="checkDim(this)"></td>
+            <td class="dim-min">—</td><td class="dim-max">—</td>
+            <td class="dim-esito">—</td>
+          </tr>
+        </tbody>
+      </table>
+      </div>
+      <button class="btn btn-outline btn-sm" onclick="addDimRow()">+ Aggiungi quota</button>
+      <div class="btn-row">
+        <button class="btn btn-primary" onclick="markDone('dim'); showPage('materiali',null)">AVANTI: Materiali →</button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ═══════════════════ MATERIALI ═════════════════════════════ -->
+<div class="page" id="page-materiali">
+  <div class="page-header">
+    <div class="ph-left">
+      <div class="page-title">MATERIALI & SPECIFICHE</div>
+      <div class="page-subtitle">Material Performance Tests · IMDS · Elemento #15-16</div>
+    </div>
+    <span class="page-badge">ELEMENTI 15-16</span>
+  </div>
+
+  <div class="card">
+    <div class="card-header" onclick="toggleCard(this)">
+      <div class="ch-left"><span class="ch-num">E15</span><span class="ch-title">Specifiche Materiale e Verifica Performance</span></div>
+      <span class="ch-badge required">OBBLIGATORIO</span>
+    </div>
+    <div class="card-body">
+      <div class="form-grid">
+        <div class="field"><label>Designazione materiale</label><input id="mat-name" type="text" placeholder="es. PA66-GF30"></div>
+        <div class="field"><label>Fornitore materiale</label><input id="mat-supp" type="text" placeholder="es. BASF SE"></div>
+        <div class="field"><label>Trade name / grado</label><input id="mat-grade" type="text" placeholder="es. Ultramid® A3HG6"></div>
+        <div class="field"><label>N° lotto materiale</label><input id="mat-lot" type="text" placeholder="Lotto fornitore"></div>
+        <div class="field"><label>Data produzione materiale</label><input id="mat-proddate" type="date"></div>
+        <div class="field"><label>Data scadenza materiale</label><input id="mat-expdate" type="date"></div>
+        <div class="field"><label>Norma materiale (cliente)</label><input id="mat-spec" type="text" placeholder="es. VW 50180 / WSS-M4D820-A1"></div>
+        <div class="field"><label>Certificato materiale n°</label><input id="mat-cert" type="text" placeholder="N° CoC"></div>
+      </div>
+    </div>
+  </div>
+
+  <div class="card">
+    <div class="card-header" onclick="toggleCard(this)">
+      <div class="ch-left"><span class="ch-num">E16</span><span class="ch-title">IMDS — International Material Data System</span></div>
+      <span class="ch-badge required">OBBLIGATORIO (Settore Auto)</span>
+    </div>
+    <div class="card-body">
+      <div class="info-box info"><span class="ib-icon">🌿</span>
+        <div class="ib-body">
+          <div class="ib-title">Requisito IMDS</div>
+          <div class="ib-text">Per il settore automotive, tutti i componenti devono essere dichiarati nell'IMDS (International Material Data System) per verificare la conformità alla Direttiva ELV (End of Life Vehicle) e alle restrizioni RoHS/REACH. Il cliente deve accettare la scheda IMDS prima dell'approvazione PPAP.</div>
+        </div>
+      </div>
+      <div class="form-grid form-grid-3">
+        <div class="field"><label>IMDS Item ID</label><input id="imds-id" type="text" placeholder="es. 123456789"></div>
+        <div class="field"><label>Versione IMDS</label><input id="imds-ver" type="text" placeholder="es. 1.0"></div>
+        <div class="field"><label>Stato</label><select id="imds-status"><option>Da inviare</option><option>Inviato — in attesa accettazione</option><option>Accettato dal cliente</option><option>Rifiutato</option></select></div>
+      </div>
+      <div class="field"><label>Peso parte dichiarato in IMDS (g)</label><input id="imds-weight" type="number" step="0.1" placeholder="es. 125.5"></div>
+      <div class="btn-row">
+        <button class="btn btn-primary" onclick="markDone('materiali'); showPage('psw',null)">AVANTI: PSW →</button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ═══════════════════ PSW ═══════════════════════════════════ -->
+<div class="page" id="page-psw">
+  <div class="page-header">
+    <div class="ph-left">
+      <div class="page-title">PART SUBMISSION WARRANT</div>
+      <div class="page-subtitle">PSW — Documento Principale di Approvazione PPAP · Elemento #18</div>
+    </div>
+    <span class="page-badge">ELEMENTO 18 — PSW</span>
+  </div>
+
+  <div class="info-box success"><span class="ib-icon">📜</span>
+    <div class="ib-body">
+      <div class="ib-title">Part Submission Warrant (PSW)</div>
+      <div class="ib-text">Il PSW è il documento sommario dell'intero PPAP. Deve essere compilato dal fornitore e firmato dal responsabile qualità aziendale prima dell'invio al cliente. Il PSW dichiara che tutti gli elementi richiesti sono stati completati, che le misure rientrano nelle specifiche e che il processo è capace di produrre conformemente ai requisiti.</div>
+    </div>
+  </div>
+
+  <div class="card">
+    <div class="card-header" onclick="toggleCard(this)">
+      <div class="ch-left"><span class="ch-num">PSW</span><span class="ch-title">Part Submission Warrant — Compilazione</span></div>
+      <span class="ch-badge required">DOCUMENTO PRINCIPALE</span>
+    </div>
+    <div class="card-body">
+      <div class="section-title">Dati Parte</div>
+      <div class="form-grid form-grid-3">
+        <div class="field"><label>Codice Parte (Cliente)</label><input id="psw-partno" type="text"></div>
+        <div class="field"><label>Descrizione Parte</label><input id="psw-partname" type="text"></div>
+        <div class="field"><label>N° Disegno / Rev.</label><input id="psw-drawrev" type="text"></div>
+        <div class="field"><label>Livello PPAP</label><input id="psw-level" type="text"></div>
+        <div class="field"><label>Quantità prodotta nel run</label><input id="psw-runqty" type="number"></div>
+        <div class="field"><label>Motivo presentazione</label><input id="psw-reason" type="text"></div>
+      </div>
+
+      <div class="section-title">Dichiarazioni Obbligatorie</div>
+      <ul class="checklist" id="psw-checklist">
+        <li><input type="checkbox" id="chk-1"><span class="cl-text">Tutte le misure dimensionali sono state eseguite e sono conformi alle specifiche del disegno.</span><span class="cl-tag">DIM</span></li>
+        <li><input type="checkbox" id="chk-2"><span class="cl-text">I test di laboratorio (materiali e funzionali) sono stati completati con esito positivo.</span><span class="cl-tag">LAB</span></li>
+        <li><input type="checkbox" id="chk-3"><span class="cl-text">Gli studi di capability (Cpk ≥ 1.67 per SC/CC, ≥ 1.33 per standard) sono soddisfatti.</span><span class="cl-tag">SPC</span></li>
+        <li><input type="checkbox" id="chk-4"><span class="cl-text">La PFMEA e il Control Plan sono stati completati e approvati internamente.</span><span class="cl-tag">FMEA/CP</span></li>
+        <li><input type="checkbox" id="chk-5"><span class="cl-text">Il Process Flow Diagram è aggiornato e rispecchia il processo produttivo attuale.</span><span class="cl-tag">PFD</span></li>
+        <li><input type="checkbox" id="chk-6"><span class="cl-text">L'MSA è stata completata e il sistema di misura è accettabile (%GRR &lt; 30%).</span><span class="cl-tag">MSA</span></li>
+        <li><input type="checkbox" id="chk-7"><span class="cl-text">I campioni sono stati preparati e identificati correttamente.</span><span class="cl-tag">CAMP.</span></li>
+        <li><input type="checkbox" id="chk-8"><span class="cl-text">La documentazione IMDS è stata inviata e accettata dal cliente.</span><span class="cl-tag">IMDS</span></li>
+        <li><input type="checkbox" id="chk-9"><span class="cl-text">Non sono state apportate modifiche al processo senza autorizzazione del cliente (per re-submission).</span><span class="cl-tag">CHANGE</span></li>
+        <li><input type="checkbox" id="chk-10"><span class="cl-text">Tutta la documentazione PPAP è archiviata e disponibile per eventuali audit.</span><span class="cl-tag">ARCHIVIO</span></li>
+      </ul>
+
+      <div class="section-title" style="margin-top:16px;">Tipo di Garanzia Richiesta</div>
+      <div class="form-grid form-grid-2">
+        <div class="field"><label>Quantità annua dichiarata</label><input id="psw-annual" type="number" placeholder="pezzi/anno"></div>
+        <div class="field"><label>Tipo di presentazione</label>
+          <select id="psw-submission">
+            <option>Invio completo di tutti gli elementi</option>
+            <option>Solo PSW — Elementi trattenuti dal fornitore</option>
+            <option>Invio parziale — come da accordo cliente</option>
+          </select>
+        </div>
+      </div>
+
+      <div class="section-title">Note / Deroghe / Condizioni Particolari</div>
+      <div class="field"><textarea id="psw-notes" rows="3" placeholder="Inserire eventuali deroghe temporanee, condizioni speciali, impegni correttivi..."></textarea></div>
+
+      <div class="btn-row">
+        <button class="btn btn-primary" onclick="generatePSW()">📄 Genera PSW Completo</button>
+        <button class="btn btn-success" onclick="markDone('psw'); showPage('firme',null)">AVANTI: Firme →</button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ═══════════════════ FIRME & REVISIONI ════════════════════ -->
+<div class="page" id="page-firme">
+  <div class="page-header">
+    <div class="ph-left">
+      <div class="page-title">FIRME & REVISIONI</div>
+      <div class="page-subtitle">Processo di approvazione interna · Iter di firma · Elemento #18</div>
+    </div>
+    <span class="page-badge">APPROVAZIONE</span>
+  </div>
+
+  <div class="card">
+    <div class="card-header" onclick="toggleCard(this)">
+      <div class="ch-left"><span class="ch-num">F1</span><span class="ch-title">Firme Interne — Approvazione PPAP</span></div>
+      <span class="ch-badge required">OBBLIGATORIO</span>
+    </div>
+    <div class="card-body">
+      <div class="notice">Raccogliere le firme di approvazione interne prima di inviare il pacchetto PPAP al cliente. Ogni responsabile deve verificare la propria area di competenza.</div>
+      <div class="sign-block" id="sign-block">
+        <div class="sign-box">
+          <div class="sb-role">Responsabile Qualità</div>
+          <div class="field"><label>Nome e Cognome</label><input type="text" id="sign-qa-name" placeholder="Nome Cognome"></div>
+          <div class="field"><label>Data firma</label><input type="date" id="sign-qa-date"></div>
+          <div class="sign-line">Firma autorizzazione</div>
+          <div class="field"><label>Stato</label>
+            <select id="sign-qa-status" onchange="updateSignStatus()">
+              <option value="pending">In attesa</option>
+              <option value="signed">Firmato — Approvato</option>
+              <option value="rejected">Non approvato</option>
+            </select>
+          </div>
+        </div>
+        <div class="sign-box">
+          <div class="sb-role">Responsabile Produzione</div>
+          <div class="field"><label>Nome e Cognome</label><input type="text" id="sign-prod-name" placeholder="Nome Cognome"></div>
+          <div class="field"><label>Data firma</label><input type="date" id="sign-prod-date"></div>
+          <div class="sign-line">Firma autorizzazione</div>
+          <div class="field"><label>Stato</label>
+            <select id="sign-prod-status" onchange="updateSignStatus()">
+              <option value="pending">In attesa</option>
+              <option value="signed">Firmato — Approvato</option>
+              <option value="rejected">Non approvato</option>
+            </select>
+          </div>
+        </div>
+        <div class="sign-box">
+          <div class="sb-role">Resp. Tecnico / Ing. Processo</div>
+          <div class="field"><label>Nome e Cognome</label><input type="text" id="sign-eng-name" placeholder="Nome Cognome"></div>
+          <div class="field"><label>Data firma</label><input type="date" id="sign-eng-date"></div>
+          <div class="sign-line">Firma autorizzazione</div>
+          <div class="field"><label>Stato</label>
+            <select id="sign-eng-status" onchange="updateSignStatus()">
+              <option value="pending">In attesa</option>
+              <option value="signed">Firmato — Approvato</option>
+              <option value="rejected">Non approvato</option>
+            </select>
+          </div>
+        </div>
+        <div class="sign-box">
+          <div class="sb-role">Direttore Generale / Management</div>
+          <div class="field"><label>Nome e Cognome</label><input type="text" id="sign-mgmt-name" placeholder="Nome Cognome"></div>
+          <div class="field"><label>Data firma</label><input type="date" id="sign-mgmt-date"></div>
+          <div class="sign-line">Firma autorizzazione</div>
+          <div class="field"><label>Stato</label>
+            <select id="sign-mgmt-status" onchange="updateSignStatus()">
+              <option value="pending">In attesa</option>
+              <option value="signed">Firmato — Approvato</option>
+              <option value="rejected">Non approvato</option>
+            </select>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div class="card">
+    <div class="card-header" onclick="toggleCard(this)">
+      <div class="ch-left"><span class="ch-num">F2</span><span class="ch-title">Storico Revisioni PPAP</span></div>
+    </div>
+    <div class="card-body">
+      <table class="data-table">
+        <thead><tr><th>Rev.</th><th>Data</th><th>Descrizione modifica</th><th>Elaborato da</th><th>Approvato da</th></tr></thead>
+        <tbody id="rev-table">
+          <tr>
+            <td>R1</td>
+            <td><input type="date" id="rev-r0-date"></td>
+            <td><input type="text" placeholder="Emissione iniziale"></td>
+            <td><input type="text" placeholder="Nome autore"></td>
+            <td><input type="text" placeholder="Nome approvatore"></td>
+          </tr>
+        </tbody>
+      </table>
+      <button class="btn btn-outline btn-sm" onclick="addRevRow()">+ Nuova revisione</button>
+      <div class="btn-row">
+        <button class="btn btn-primary" onclick="markDone('firme'); showPage('archiviazione',null)">AVANTI: Archiviazione →</button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ═══════════════════ ARCHIVIAZIONE ════════════════════════ -->
+<div class="page" id="page-archiviazione">
+  <div class="page-header">
+    <div class="ph-left">
+      <div class="page-title">ARCHIVIAZIONE & DISPOSIZIONE</div>
+      <div class="page-subtitle">Invio pacchetto · Risposta cliente · Archiviazione documentazione</div>
+    </div>
+    <span class="page-badge">FASE FINALE</span>
+  </div>
+
+  <div class="card">
+    <div class="card-header" onclick="toggleCard(this)">
+      <div class="ch-left"><span class="ch-num">A1</span><span class="ch-title">Checklist Invio Pacchetto al Cliente</span></div>
+      <span class="ch-badge required">OBBLIGATORIO</span>
+    </div>
+    <div class="card-body">
+      <ul class="checklist">
+        <li><input type="checkbox"><span class="cl-text">PSW firmato — copia originale con firma autografa o digitale qualificata</span><span class="cl-tag">PSW</span></li>
+        <li><input type="checkbox"><span class="cl-text">Design Records e disegni (Rev. aggiornata)</span><span class="cl-tag">E1</span></li>
+        <li><input type="checkbox"><span class="cl-text">Engineering Change Documents (se applicabile)</span><span class="cl-tag">E2</span></li>
+        <li><input type="checkbox"><span class="cl-text">Process Flow Diagram approvato</span><span class="cl-tag">E3</span></li>
+        <li><input type="checkbox"><span class="cl-text">PFMEA — ultima revisione approvata</span><span class="cl-tag">E4</span></li>
+        <li><input type="checkbox"><span class="cl-text">Control Plan — ultima revisione approvata</span><span class="cl-tag">E5</span></li>
+        <li><input type="checkbox"><span class="cl-text">MSA Study Report</span><span class="cl-tag">E6</span></li>
+        <li><input type="checkbox"><span class="cl-text">Dimensional Results — report completo</span><span class="cl-tag">E14</span></li>
+        <li><input type="checkbox"><span class="cl-text">Material Performance Test Results</span><span class="cl-tag">E15</span></li>
+        <li><input type="checkbox"><span class="cl-text">Initial Sample Parts (fisici)</span><span class="cl-tag">E11</span></li>
+        <li><input type="checkbox"><span class="cl-text">Appearance Approval Report (AAR) se applicabile</span><span class="cl-tag">E12</span></li>
+        <li><input type="checkbox"><span class="cl-text">IMDS — conferma accettazione</span><span class="cl-tag">E16</span></li>
+        <li><input type="checkbox"><span class="cl-text">Certificati di calibrazione strumenti utilizzati</span><span class="cl-tag">E6</span></li>
+        <li><input type="checkbox"><span class="cl-text">SPC Studies / Capability Reports</span><span class="cl-tag">E9-10</span></li>
+        <li><input type="checkbox"><span class="cl-text">Report test di laboratorio con accreditamento LAT/ACCREDIA</span><span class="cl-tag">E13</span></li>
+      </ul>
+    </div>
+  </div>
+
+  <div class="card">
+    <div class="card-header" onclick="toggleCard(this)">
+      <div class="ch-left"><span class="ch-num">A2</span><span class="ch-title">Risposta Cliente — Disposizione PPAP</span></div>
+      <span class="ch-badge required">DA COMPLETARE POST-INVIO</span>
+    </div>
+    <div class="card-body">
+      <div class="form-grid">
+        <div class="field"><label>Data invio pacchetto al cliente</label><input id="arch-senddate" type="date"></div>
+        <div class="field"><label>Metodo invio</label><select id="arch-method"><option>Email</option><option>Portale Qualità Cliente</option><option>Consegna fisica</option><option>Posta raccomandata</option></select></div>
+        <div class="field"><label>Data risposta cliente</label><input id="arch-respdate" type="date"></div>
+        <div class="field"><label>Disposizione Cliente</label>
+          <select id="arch-disposition" onchange="showDisposition()">
+            <option value="">-- In attesa --</option>
+            <option value="fa">✅ Full Approval — Approvazione Completa</option>
+            <option value="interim">⚠️ Interim Approval — Approvazione Provvisoria</option>
+            <option value="reject">❌ Rejected — Respinto</option>
+          </select>
+        </div>
+      </div>
+      <div id="disposition-detail" style="display:none;margin-top:12px;"></div>
+      <div class="field" style="margin-top:12px;"><label>Note / Commenti cliente</label><textarea id="arch-notes" rows="3"></textarea></div>
+    </div>
+  </div>
+
+  <div class="card">
+    <div class="card-header" onclick="toggleCard(this)">
+      <div class="ch-left"><span class="ch-num">A3</span><span class="ch-title">Archiviazione Documentazione</span></div>
+    </div>
+    <div class="card-body">
+      <div class="info-box warning"><span class="ib-icon">🗄️</span>
+        <div class="ib-body">
+          <div class="ib-title">Requisiti di conservazione (IATF 16949)</div>
+          <div class="ib-text">La documentazione PPAP deve essere conservata per almeno <strong>1 anno dopo la cessazione della produzione della parte + 1 anno</strong>, o secondo quanto specificato dal cliente (spesso 15 anni per componenti safety-critical nel settore automotive). Tutta la documentazione deve essere recuperabile in caso di audit entro tempi ragionevoli.</div>
+        </div>
+      </div>
+      <div class="form-grid form-grid-3">
+        <div class="field"><label>Posizione archivio fisico</label><input id="arch-loc" type="text" placeholder="es. Armadio Q2 — Reparto Qualità"></div>
+        <div class="field"><label>Posizione archivio digitale</label><input id="arch-dig" type="text" placeholder="es. Server/Qualità/PPAP/2024/..."></div>
+        <div class="field"><label>Data scadenza archiviazione</label><input id="arch-exp" type="date"></div>
+        <div class="field"><label>Responsabile archivio</label><input id="arch-resp" type="text"></div>
+        <div class="field"><label>N° dossier PPAP</label><input id="arch-dossier" type="text" placeholder="es. PPAP-2024-001"></div>
+      </div>
+
+      <div class="btn-row" style="margin-top:16px;">
+        <button class="btn btn-success" onclick="markDone('archiviazione'); updateProgress(); showToast('🎉 PPAP completato! Tutti gli elementi sono stati registrati.')">✅ CHIUDI PPAP</button>
+        <button class="btn btn-primary" onclick="printPPAP()">🖨️ Stampa Riepilogo</button>
+        <button class="btn btn-outline" onclick="openFileManager()">📁 Gestione File (Salva/Carica)</button>
+      </div>
+    </div>
+  </div>
+</div>
+
+</main>
+</div>
+
+<div id="toast">✅ Operazione completata</div>
+
+<!-- ── FILE MANAGER MODAL ──────────────────────────────── -->
+<div id="file-modal" style="display:none;position:fixed;inset:0;z-index:10000;background:rgba(0,0,0,0.75);align-items:center;justify-content:center;">
+  <div style="background:var(--bg2);border:1px solid var(--border2);width:580px;max-width:95vw;max-height:90vh;overflow-y:auto;">
+    <div style="background:var(--bg3);border-bottom:2px solid var(--accent);padding:14px 20px;display:flex;align-items:center;justify-content:space-between;">
+      <div>
+        <div style="font-family:var(--font-display);font-size:22px;letter-spacing:2px;color:var(--accent);">GESTIONE FILE</div>
+        <div style="font-family:var(--font-mono);font-size:10px;color:var(--text3);letter-spacing:0.5px;margin-top:2px;">Salva su disco · Carica da disco · Gestisci progetti</div>
+      </div>
+      <button onclick="closeFileManager()" style="background:none;border:1px solid var(--border2);color:var(--text3);padding:4px 10px;cursor:pointer;font-size:16px;">&#x2715;</button>
+    </div>
+    <div style="padding:20px;">
+      <div style="margin-bottom:20px;">
+        <div class="section-title">SALVA PROGETTO SU DISCO</div>
+        <div class="notice">Il file JSON viene scaricato nella cartella che scegli. Per scegliere la directory, attiva "Chiedi dove salvare" nelle impostazioni del browser.</div>
+        <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-top:12px;">
+          <div class="field"><label>Nome file</label><input id="fm-filename" type="text" placeholder="PPAP_[codice]" style="font-family:var(--font-mono);font-size:12px;" oninput="updatePreview()"></div>
+          <div class="field"><label>Suffisso data</label>
+            <select id="fm-datesuffix" onchange="updatePreview()">
+              <option value="none">Nessuno</option>
+              <option value="date" selected>_AAAAMMGG</option>
+              <option value="datetime">_AAAAMMGG_HHMM</option>
+            </select>
+          </div>
+        </div>
+        <div style="background:var(--bg3);border:1px solid var(--border);padding:10px 14px;margin-top:8px;font-family:var(--font-mono);font-size:11px;color:var(--text3);">
+          Nome file: <span id="fm-preview" style="color:var(--accent);">—</span>
+        </div>
+        <div class="btn-row" style="margin-top:10px;">
+          <button class="btn btn-primary" onclick="saveToFile()">SCARICA FILE SU DISCO</button>
+          <button class="btn btn-outline btn-sm" onclick="saveData();showToast('Salvato nel browser')">Salva solo nel browser</button>
+        </div>
+      </div>
+      <hr class="divider">
+      <div style="margin-bottom:20px;">
+        <div class="section-title">CARICA PROGETTO DA DISCO</div>
+        <div class="notice">Seleziona un file .json precedentemente salvato per ripristinare tutti i dati del progetto.</div>
+        <div id="fm-dropzone"
+             onclick="document.getElementById('fm-fileinput').click()"
+             ondragover="event.preventDefault();this.style.borderColor='var(--accent)'"
+             ondragleave="this.style.borderColor='var(--border2)'"
+             ondrop="handleFileDrop(event)"
+             style="border:2px dashed var(--border2);padding:28px 20px;text-align:center;cursor:pointer;margin-top:10px;transition:border-color 0.2s;border-radius:2px;">
+          <div style="font-size:32px;margin-bottom:8px;">&#x1F4C1;</div>
+          <div style="font-family:var(--font-mono);font-size:12px;color:var(--text2);">Clicca per selezionare il file JSON</div>
+          <div style="font-family:var(--font-mono);font-size:10px;color:var(--text3);margin-top:4px;">oppure trascina qui il file</div>
+        </div>
+        <input id="fm-fileinput" type="file" accept=".json" style="display:none;" onchange="handleFileSelect(event)">
+        <div id="fm-fileinfo" style="display:none;background:var(--bg3);border:1px solid var(--green);padding:12px 14px;margin-top:10px;">
+          <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:8px;">
+            <span style="font-family:var(--font-mono);font-size:11px;color:var(--green);">File selezionato</span>
+            <button onclick="clearSelectedFile()" style="background:none;border:none;color:var(--text3);cursor:pointer;font-size:11px;">Annulla</button>
+          </div>
+          <div id="fm-filedetails" style="font-size:12px;color:var(--text2);line-height:1.6;"></div>
+          <div class="btn-row" style="margin-top:10px;">
+            <button class="btn btn-success" onclick="loadFromFile()">CARICA QUESTO FILE</button>
+          </div>
+        </div>
+      </div>
+      <hr class="divider">
+      <div style="margin-bottom:16px;">
+        <div class="section-title">FILE RECENTI (sessioni browser)</div>
+        <div id="fm-recent-list" style="font-size:12px;color:var(--text3);padding:4px 0;">Nessun file recente.</div>
+      </div>
+      <hr class="divider">
+      <div class="info-box info" style="margin-bottom:0;">
+        <span class="ib-icon">&#x2139;&#xFE0F;</span>
+        <div class="ib-body">
+          <div class="ib-title">Come scegliere la cartella di salvataggio</div>
+          <div class="ib-text"><strong>Chrome:</strong> Impostazioni &rarr; Avanzate &rarr; Download &rarr; attiva "Chiedi dove salvare ogni file"<br>
+          <strong>Edge:</strong> Impostazioni &rarr; Download &rarr; attiva "Chiedi dove salvare ogni volta"<br>
+          Dopo l'attivazione ogni salvataggio apre la finestra di selezione della cartella di destinazione.</div>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+
+<script>
+// ─── DATA STORE ──────────────────────────────────────────
+const PPAP_ELEMENTS = [
+  {id:1, name:'Design Records',             lvl:['R','R','R','*','R']},
+  {id:2, name:'Engineering Change Docs',    lvl:['R','R','R','*','R']},
+  {id:3, name:'Customer Engineering Appr.', lvl:['S','S','S','*','S']},
+  {id:4, name:'PFMEA',                      lvl:['S','S','R','*','R']},
+  {id:5, name:'Process Flow Diagram',       lvl:['S','S','R','*','R']},
+  {id:6, name:'MSA Studies',                lvl:['S','S','R','*','R']},
+  {id:7, name:'Dimensional Results',        lvl:['S','R','R','*','R']},
+  {id:8, name:'Material Test Results',      lvl:['S','R','R','*','R']},
+  {id:9, name:'Performance Test Results',   lvl:['S','R','R','*','R']},
+  {id:10,name:'Initial Sample Inspection Report',lvl:['S','S','R','*','R']},
+  {id:11,name:'Initial Sample Parts',       lvl:['S','S','S','*','S']},
+  {id:12,name:'Checking Aids',              lvl:['S','S','S','*','S']},
+  {id:13,name:'Compliance w/ Customer Spec',lvl:['R','R','R','*','R']},
+  {id:14,name:'SPC / Capability Studies',   lvl:['S','S','R','*','R']},
+  {id:15,name:'Lab Documentation',          lvl:['S','R','R','*','R']},
+  {id:16,name:'AAR (Appearance Approval)',  lvl:['S','S','R','*','R']},
+  {id:17,name:'Sub-Supplier PPAP',          lvl:['S','S','R','*','R']},
+  {id:18,name:'Part Submission Warrant (PSW)',lvl:['R','R','R','R','R']},
+];
+
+const STATUS_MAP = {
+  dashboard:'wip', anagrafica:'', livello:'', dfd:'', fmea:'',
+  cpf:'', msa:'', spc:'', ppcp:'', campioni:'',
+  dim:'', materiali:'', psw:'', firme:'', archiviazione:''
+};
+
+const LEVEL_DESC = {
+  '1':'<strong>Livello 1 — Minimo:</strong> Il fornitore invia SOLO il PSW firmato (e AAR se richiesto). Tutti gli altri documenti devono essere conservati dal fornitore e disponibili su richiesta.',
+  '2':'<strong>Livello 2 — Ridotto:</strong> Il fornitore invia il PSW + campioni + alcuni documenti di supporto selezionati (dimensionali, test materiali).',
+  '3':'<strong>Livello 3 — Standard (predefinito):</strong> Il fornitore invia il PSW + campioni + tutta la documentazione di supporto. Livello più comune nel settore automotive.',
+  '4':'<strong>Livello 4 — Definito dal Cliente:</strong> Il fornitore invia il PSW + altri elementi definiti specificamente dal cliente in forma scritta.',
+  '5':'<strong>Livello 5 — Review in Loco:</strong> Il fornitore invia PSW + campioni + tutta la documentazione, E il cliente esegue un audit in loco presso lo stabilimento del fornitore.'
+};
+
+// ─── NAVIGATION ──────────────────────────────────────────
+function showPage(id, el) {
+  document.querySelectorAll('.page').forEach(p => p.classList.remove('active'));
+  document.querySelectorAll('.nav-item').forEach(n => n.classList.remove('active'));
+  const page = document.getElementById('page-' + id);
+  if (page) page.classList.add('active');
+  if (el) {
+    el.classList.add('active');
+  } else {
+    const navEl = document.querySelector('[data-page="' + id + '"]');
+    if (navEl) navEl.classList.add('active');
+  }
+  window.scrollTo(0,0);
+}
+
+function toggleCard(header) {
+  const body = header.nextElementSibling;
+  if (body && body.classList.contains('card-body')) {
+    body.classList.toggle('collapsed');
+  }
+}
+
+// ─── HEADER UPDATE ────────────────────────────────────────
+function updateHeader() {
+  const proj = document.getElementById('f-partno')?.value || '—';
+  const client = document.getElementById('f-client')?.value || '—';
+  const level = document.getElementById('f-level')?.value || '—';
+  document.getElementById('hdr-project').textContent = proj;
+  document.getElementById('hdr-client').textContent = client;
+  document.getElementById('hdr-level').textContent = level ? 'Liv.' + level : '—';
+}
+
+// ─── PROGRESS ─────────────────────────────────────────────
+function markDone(page) {
+  STATUS_MAP[page] = 'done';
+  const el = document.getElementById('st-' + page);
+  if (el) { el.className = 'nav-status done'; }
+  updateProgress();
+  showToast('✅ ' + page.toUpperCase() + ' salvato');
+}
+
+function updateProgress() {
+  const pages = Object.keys(STATUS_MAP).filter(k => k !== 'dashboard');
+  const done = pages.filter(k => STATUS_MAP[k] === 'done').length;
+  const pct = Math.round((done / pages.length) * 100);
+  document.getElementById('pbar-pct').textContent = pct + '%';
+  document.getElementById('pbar-fill').style.width = pct + '%';
+  document.getElementById('d-complete').textContent = done;
+  document.getElementById('d-pct').textContent = pct + '%';
+}
+
+// ─── LEVEL TABLE ──────────────────────────────────────────
+function updateLevelTable() {
+  const lvl = parseInt(document.getElementById('f-level').value) - 1;
+  const desc = document.getElementById('level-desc');
+  const lv = document.getElementById('f-level').value;
+  if (lv && LEVEL_DESC[lv]) {
+    desc.innerHTML = LEVEL_DESC[lv];
+  }
+  if (isNaN(lvl)) return;
+  const tbody = document.getElementById('level-req-body');
+  tbody.innerHTML = '';
+  PPAP_ELEMENTS.forEach(el => {
+    const req = el.lvl[lvl];
+    const color = req === 'R' ? 'color:var(--accent)' : req === 'S' ? 'color:var(--text3)' : 'color:var(--blue)';
+    tbody.innerHTML += `<tr>
+      <td style="font-family:var(--font-mono);color:var(--text3)">${el.id}</td>
+      <td>${el.name}</td>
+      <td style="font-family:var(--font-mono);font-weight:600;${color}">${req}</td>
+      <td style="color:var(--text3);font-size:11px">${req==='R'?'Da inviare al cliente':req==='S'?'Da conservare (fornitore)':'Come da cliente'}</td>
+    </tr>`;
+  });
+}
+
+// ─── ELEMENTS TABLE (DASHBOARD) ─────────────────────────────
+function buildElementsTable() {
+  const tbody = document.getElementById('elements-table');
+  if (!tbody) return;
+  tbody.innerHTML = '';
+  PPAP_ELEMENTS.forEach(el => {
+    const cells = el.lvl.map(l => `<td style="text-align:center;font-family:var(--font-mono);font-weight:600;color:${l==='R'?'var(--accent)':l==='S'?'var(--text3)':'var(--blue)'}">${l}</td>`).join('');
+    tbody.innerHTML += `<tr>
+      <td style="font-family:var(--font-mono);color:var(--text3)">${el.id}</td>
+      <td>${el.name}</td>
+      ${cells}
+      <td><span style="font-family:var(--font-mono);font-size:9px;padding:2px 7px;border:1px solid var(--border2);color:var(--text3)">APERTO</span></td>
+    </tr>`;
+  });
+}
+
+// ─── ADD ROW HELPERS ─────────────────────────────────────────
+function addRow(tbodyId, cols, firstLabel) {
+  const tbody = document.getElementById(tbodyId);
+  if (!tbody) return;
+  const rowNum = tbody.querySelectorAll('tr').length + 1;
+  let cells = `<td>${rowNum}</td>`;
+  for (let i = 1; i < cols; i++) {
+    cells += `<td><input type="text" placeholder="${i===1?firstLabel:''}"></td>`;
+  }
+  const tr = document.createElement('tr');
+  tr.innerHTML = cells;
+  tbody.appendChild(tr);
+}
+
+function addFMEARow() {
+  const tbody = document.getElementById('fmea-body');
+  const tr = document.createElement('tr');
+  tr.innerHTML = `
+    <td><input type="text" placeholder="Processo"></td>
+    <td><input type="text" placeholder="Modo di guasto"></td>
+    <td><input type="text" placeholder="Effetto"></td>
+    <td><input type="number" min="1" max="10" class="rpn-g" onchange="calcRPN(this)" style="width:40px"></td>
+    <td><input type="text" placeholder="Causa"></td>
+    <td><input type="number" min="1" max="10" class="rpn-o" onchange="calcRPN(this)" style="width:40px"></td>
+    <td><input type="text" placeholder="Prevenzione"></td>
+    <td><input type="text" placeholder="Rilevamento"></td>
+    <td><input type="number" min="1" max="10" class="rpn-r" onchange="calcRPN(this)" style="width:40px"></td>
+    <td class="rpn-val" style="font-weight:600;color:var(--accent)">—</td>
+    <td><input type="text" placeholder="Azione"></td>
+    <td><input type="text" placeholder="Resp."></td>
+    <td class="rpn-new">—</td>`;
+  tbody.appendChild(tr);
+}
+
+function addCPRow() {
+  const tbody = document.getElementById('cp-table');
+  const n = tbody.querySelectorAll('tr').length;
+  const step = (n+1)*10;
+  const tr = document.createElement('tr');
+  tr.innerHTML = `<td><input type="text" value="${step}"></td>${Array(10).fill('<td><input type="text"></td>').join('')}`;
+  tbody.appendChild(tr);
+}
+
+function addPFDRow() {
+  const tbody = document.getElementById('pfd-table');
+  const n = tbody.querySelectorAll('tr').length;
+  const step = (n+1)*10;
+  const tr = document.createElement('tr');
+  tr.innerHTML = `<td>${step}</td>
+    <td><input type="text"></td>
+    <td><input type="text"></td>
+    <td><select><option>Operazione</option><option>Ispezione</option><option>Trasporto</option><option>Magazzino</option><option>Ritardo</option></select></td>
+    <td><input type="text"></td>
+    <td><input type="text"></td>`;
+  tbody.appendChild(tr);
+}
+
+function addDimRow() {
+  const tbody = document.getElementById('dim-table');
+  const n = tbody.querySelectorAll('tr').length + 1;
+  const tr = document.createElement('tr');
+  tr.innerHTML = `
+    <td><input type="text" value="${n}"></td>
+    <td><input type="text" placeholder="Quota"></td>
+    <td><input type="number" step="0.01" class="dim-nom" onchange="checkDim(this)"></td>
+    <td><input type="number" step="0.01" class="dim-tol-p" onchange="checkDim(this)" placeholder="0.2"></td>
+    <td><input type="number" step="0.01" class="dim-tol-n" onchange="checkDim(this)" placeholder="0.2"></td>
+    <td><input type="number" step="0.01" class="dim-s" onchange="checkDim(this)"></td>
+    <td><input type="number" step="0.01" class="dim-s" onchange="checkDim(this)"></td>
+    <td><input type="number" step="0.01" class="dim-s" onchange="checkDim(this)"></td>
+    <td><input type="number" step="0.01" class="dim-s" onchange="checkDim(this)"></td>
+    <td><input type="number" step="0.01" class="dim-s" onchange="checkDim(this)"></td>
+    <td class="dim-min">—</td><td class="dim-max">—</td>
+    <td class="dim-esito">—</td>`;
+  tbody.appendChild(tr);
+}
+
+function addRevRow() {
+  const tbody = document.getElementById('rev-table');
+  const n = tbody.querySelectorAll('tr').length;
+  const tr = document.createElement('tr');
+  tr.innerHTML = `<td>R${n}</td>
+    <td><input type="date"></td>
+    <td><input type="text" placeholder="Descrizione"></td>
+    <td><input type="text" placeholder="Autore"></td>
+    <td><input type="text" placeholder="Approvatore"></td>`;
+  tbody.appendChild(tr);
+}
+
+// ─── RPN CALCULATION ─────────────────────────────────────
+function calcRPN(el) {
+  const row = el.closest('tr');
+  const g = parseFloat(row.querySelector('.rpn-g')?.value) || 0;
+  const o = parseFloat(row.querySelector('.rpn-o')?.value) || 0;
+  const r = parseFloat(row.querySelector('.rpn-r')?.value) || 0;
+  const rpn = g * o * r;
+  const valEl = row.querySelector('.rpn-val');
+  if (valEl) {
+    valEl.textContent = rpn || '—';
+    valEl.style.color = rpn > 200 ? 'var(--red)' : rpn > 100 ? 'var(--accent)' : rpn > 0 ? 'var(--green)' : 'var(--accent)';
+  }
+}
+
+// ─── MSA CALCULATION ─────────────────────────────────────
+function calcMSA() {
+  const ids = ['mA1p1','mA1p2','mA1p3','mA1p4','mA1p5','mA2p1','mA2p2','mA2p3','mA2p4','mA2p5'];
+  const vals = ids.map(id => parseFloat(document.getElementById(id)?.value)).filter(v => !isNaN(v));
+  if (vals.length < 6) {
+    document.getElementById('msa-result').innerHTML = '<div style="color:var(--text3);font-size:11px">Inserire almeno 6 misure per calcolare</div>';
+    return;
+  }
+  const tol = parseFloat(document.getElementById('msa-tol')?.value) || 0;
+  const rep1 = ids.slice(0,5).map(id => parseFloat(document.getElementById(id)?.value)).filter(v=>!isNaN(v));
+  const rep2 = ids.slice(5,10).map(id => parseFloat(document.getElementById(id)?.value)).filter(v=>!isNaN(v));
+  const n = Math.min(rep1.length, rep2.length);
+  if (n === 0) return;
+  const ranges = [];
+  for (let i=0;i<n;i++) ranges.push(Math.abs(rep1[i]-rep2[i]));
+  const Rbar = ranges.reduce((a,b)=>a+b,0)/ranges.length;
+  const d2 = 1.128; // n=2 replicas
+  const sigma_repro = Rbar / d2;
+  const GRR = sigma_repro * 5.15;
+  const pctGRR = tol > 0 ? (GRR / tol * 100) : 0;
+  const color = pctGRR < 10 ? 'var(--green)' : pctGRR < 30 ? 'var(--accent)' : 'var(--red)';
+  const verdict = pctGRR < 10 ? 'ACCETTABILE' : pctGRR < 30 ? 'MARGINALE' : 'NON ACCETTABILE';
+  document.getElementById('msa-result').innerHTML = `
+    <div style="margin-bottom:10px;color:var(--text3);font-size:10px;letter-spacing:1px">RISULTATI MSA</div>
+    <div style="margin:6px 0"><span style="color:var(--text3)">R̄ (range medio):</span> <span style="color:var(--text)">${Rbar.toFixed(4)}</span></div>
+    <div style="margin:6px 0"><span style="color:var(--text3)">σ riproducibilità:</span> <span style="color:var(--text)">${sigma_repro.toFixed(4)}</span></div>
+    <div style="margin:6px 0"><span style="color:var(--text3)">GRR (5.15σ):</span> <span style="color:var(--text)">${GRR.toFixed(4)}</span></div>
+    ${tol>0?`<div style="margin:6px 0"><span style="color:var(--text3)">%GRR / Tolleranza:</span> <span style="color:${color};font-weight:700;font-size:16px">${pctGRR.toFixed(1)}%</span></div>
+    <div style="margin-top:10px;padding:6px 10px;background:var(--bg);border:1px solid ${color};color:${color};font-size:11px;letter-spacing:1px">ESITO: ${verdict}</div>`:'<div style="color:var(--text3);font-size:11px">Inserire la tolleranza per %GRR</div>'}`;
+}
+
+// ─── CPK CALCULATION ─────────────────────────────────────
+function calcCpk() {
+  const usl = parseFloat(document.getElementById('spc-usl')?.value);
+  const lsl = parseFloat(document.getElementById('spc-lsl')?.value);
+  const dataStr = document.getElementById('spc-data')?.value || '';
+  const data = dataStr.split(/[\s,;]+/).map(Number).filter(v => !isNaN(v) && v !== 0);
+  if (data.length < 5 || isNaN(usl) || isNaN(lsl)) {
+    document.getElementById('cpk-results').innerHTML = '<div style="color:var(--text3);font-size:11px">Inserire USL, LSL e almeno 5 valori per calcolare</div>';
+    return;
+  }
+  const n = data.length;
+  const mean = data.reduce((a,b)=>a+b,0)/n;
+  const variance = data.reduce((a,b)=>a+(b-mean)**2,0)/(n-1);
+  const std = Math.sqrt(variance);
+  const Cp = (usl-lsl)/(6*std);
+  const Cpu = (usl-mean)/(3*std);
+  const Cpl = (mean-lsl)/(3*std);
+  const Cpk = Math.min(Cpu, Cpl);
+  const Pp = (usl-lsl)/(6*std);
+  const Ppk = Math.min((usl-mean)/(3*std),(mean-lsl)/(3*std));
+  const min = Math.min(...data), max = Math.max(...data);
+  const outOfSpec = data.filter(v => v < lsl || v > usl).length;
+  const cpkColor = Cpk >= 1.67 ? 'var(--green)' : Cpk >= 1.33 ? 'var(--accent)' : 'var(--red)';
+  const cpkVerdict = Cpk >= 1.67 ? '✅ ECCELLENTE' : Cpk >= 1.33 ? '⚠️ ACCETTABILE' : '❌ NON CAPACE';
+  document.getElementById('cpk-results').innerHTML = `
+    <div style="color:var(--text3);font-size:10px;letter-spacing:1px;margin-bottom:10px">RISULTATI CAPABILITY</div>
+    <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-bottom:12px">
+      <div style="padding:8px;background:var(--bg3);border:1px solid var(--border)"><div style="font-size:9px;color:var(--text3)">n campioni</div><div style="font-size:18px;font-weight:700">${n}</div></div>
+      <div style="padding:8px;background:var(--bg3);border:1px solid var(--border)"><div style="font-size:9px;color:var(--text3)">Media x̄</div><div style="font-size:18px;font-weight:700">${mean.toFixed(4)}</div></div>
+      <div style="padding:8px;background:var(--bg3);border:1px solid var(--border)"><div style="font-size:9px;color:var(--text3)">Std Dev σ</div><div style="font-size:18px;font-weight:700">${std.toFixed(4)}</div></div>
+      <div style="padding:8px;background:var(--bg3);border:1px solid var(--border)"><div style="font-size:9px;color:var(--text3)">Cp</div><div style="font-size:18px;font-weight:700">${Cp.toFixed(3)}</div></div>
+      <div style="padding:8px;background:var(--bg3);border:1px solid var(--border)"><div style="font-size:9px;color:var(--text3)">Cpk</div><div style="font-size:22px;font-weight:700;color:${cpkColor}">${Cpk.toFixed(3)}</div></div>
+      <div style="padding:8px;background:var(--bg3);border:1px solid var(--border)"><div style="font-size:9px;color:var(--text3)">Ppk</div><div style="font-size:18px;font-weight:700">${Ppk.toFixed(3)}</div></div>
+    </div>
+    <div style="padding:8px;background:var(--bg);border:1px solid ${cpkColor};color:${cpkColor};font-size:11px;letter-spacing:1px;text-align:center">${cpkVerdict}</div>
+    <div style="margin-top:8px;font-size:10px;color:var(--text3)">Pezzi fuori spec: <span style="color:${outOfSpec>0?'var(--red)':'var(--green)'}">${outOfSpec}</span> / ${n} | Min: ${min.toFixed(3)} | Max: ${max.toFixed(3)}</div>`;
+  document.getElementById('d-cpk').textContent = Cpk.toFixed(2);
+}
+
+function fillSampleData() {
+  // Generate sample normally distributed data
+  const usl = parseFloat(document.getElementById('spc-usl')?.value) || 2.7;
+  const lsl = parseFloat(document.getElementById('spc-lsl')?.value) || 2.3;
+  const nom = parseFloat(document.getElementById('spc-nom')?.value) || 2.5;
+  const sigma = (usl-lsl)/8;
+  const data = [];
+  for (let i=0;i<50;i++) {
+    const u1 = Math.random(), u2 = Math.random();
+    const z = Math.sqrt(-2*Math.log(u1)) * Math.cos(2*Math.PI*u2);
+    data.push((nom + z*sigma).toFixed(3));
+  }
+  document.getElementById('spc-data').value = data.join(', ');
+  if (!isNaN(usl) && !isNaN(lsl)) calcCpk();
+}
+
+// ─── DIM RESULTS ─────────────────────────────────────────
+function checkDim(el) {
+  const row = el.closest('tr');
+  const nom = parseFloat(row.querySelector('.dim-nom')?.value);
+  const tolP = parseFloat(row.querySelector('.dim-tol-p')?.value);
+  const tolN = parseFloat(row.querySelector('.dim-tol-n')?.value);
+  const vals = [...row.querySelectorAll('.dim-s')].map(i=>parseFloat(i.value)).filter(v=>!isNaN(v));
+  if (!vals.length) return;
+  const minV = Math.min(...vals), maxV = Math.max(...vals);
+  row.querySelector('.dim-min').textContent = minV.toFixed(3);
+  row.querySelector('.dim-max').textContent = maxV.toFixed(3);
+  if (!isNaN(nom) && !isNaN(tolP) && !isNaN(tolN)) {
+    const usl = nom + tolP, lsl = nom - tolN;
+    const ok = vals.every(v => v >= lsl && v <= usl);
+    const esEl = row.querySelector('.dim-esito');
+    esEl.textContent = ok ? 'OK' : 'NOK';
+    esEl.style.color = ok ? 'var(--green)' : 'var(--red)';
+    esEl.style.fontWeight = '700';
+  }
+}
+
+// ─── SIGN STATUS ────────────────────────────────────────
+function updateSignStatus() {
+  const statuses = ['sign-qa-status','sign-prod-status','sign-eng-status','sign-mgmt-status'];
+  const signed = statuses.map(id => document.getElementById(id)?.value).filter(v=>v==='signed').length;
+  document.getElementById('d-sign').textContent = `${signed}/${statuses.length}`;
+}
+
+// ─── DISPOSITION ────────────────────────────────────────
+function showDisposition() {
+  const val = document.getElementById('arch-disposition').value;
+  const div = document.getElementById('disposition-detail');
+  if (!val) { div.style.display='none'; return; }
+  div.style.display='block';
+  const msgs = {
+    fa: '<div class="info-box success"><span class="ib-icon">✅</span><div class="ib-body"><div class="ib-title">Full Approval — Approvazione Completa</div><div class="ib-text">Il cliente ha approvato il PPAP senza condizioni. Il fornitore può avviare la produzione di serie. Archiviare il documento di approvazione firmato dal cliente.</div></div></div>',
+    interim: '<div class="info-box warning"><span class="ib-icon">⚠️</span><div class="ib-body"><div class="ib-title">Interim Approval — Approvazione Provvisoria</div><div class="ib-text">Il cliente concede un\'approvazione temporanea con condizioni. Il fornitore deve completare le azioni correttive e presentare il PPAP aggiornato entro la data concordata. Definire piano azioni con scadenze.</div></div></div>',
+    reject: '<div class="info-box" style="background:var(--red-dim);border-color:var(--red)"><span class="ib-icon">❌</span><div class="ib-body"><div class="ib-title" style="color:var(--red)">Rejected — PPAP Respinto</div><div class="ib-text">Il cliente ha respinto il PPAP. Analizzare i motivi del rifiuto, implementare le azioni correttive necessarie e ripresentare il PPAP aggiornato.</div></div></div>'
+  };
+  div.innerHTML = msgs[val] || '';
+}
+
+// ─── PSW GENERATE ────────────────────────────────────────
+function generatePSW() {
+  const partno = document.getElementById('f-partno')?.value || '—';
+  const partname = document.getElementById('f-partname')?.value || '—';
+  const client = document.getElementById('f-client')?.value || '—';
+  const level = document.getElementById('f-level')?.value || '—';
+  const supplier = document.getElementById('f-supplier')?.value || '—';
+  const checked = document.querySelectorAll('#psw-checklist input:checked').length;
+  const total = document.querySelectorAll('#psw-checklist input').length;
+  if (checked < total) {
+    alert(`Attenzione: ${total - checked} dichiarazioni non ancora spuntate. Verificare tutti i requisiti prima di generare il PSW.`);
+  }
+  const w = window.open('','_blank');
+  const today = new Date().toLocaleDateString('it-IT');
+  w.document.write(`<!DOCTYPE html><html><head><title>PSW — ${partno}</title>
+  <style>
+    body{font-family:Arial,sans-serif;font-size:12px;margin:20px;color:#000}
+    h1{font-size:18px;text-align:center;margin-bottom:4px}
+    h2{font-size:14px;border-bottom:2px solid #000;padding-bottom:4px;margin-top:20px}
+    table{width:100%;border-collapse:collapse;margin-bottom:12px}
+    th,td{border:1px solid #000;padding:5px 7px;font-size:11px}
+    th{background:#eee;font-weight:bold}
+    .header-box{border:2px solid #000;padding:10px;margin-bottom:16px}
+    .sign-grid{display:grid;grid-template-columns:1fr 1fr 1fr;gap:10px}
+    .sign-box{border:1px solid #000;padding:8px}
+    .sign-line{border-top:1px solid #000;margin-top:30px;padding-top:4px;font-size:10px}
+    @media print{button{display:none}}
+  </style></head><body>
+  <button onclick="window.print()">🖨️ Stampa PSW</button>
+  <div class="header-box">
+    <h1>PART SUBMISSION WARRANT (PSW)</h1>
+    <p style="text-align:center;font-size:11px">AIAG PPAP 4ª Edizione · IATF 16949:2016</p>
+  </div>
+  <table>
+    <tr><th>Codice Parte (Cliente)</th><td>${partno}</td><th>Descrizione Parte</th><td>${partname}</td></tr>
+    <tr><th>Fornitore</th><td>${supplier}</td><th>Cliente</th><td>${client}</td></tr>
+    <tr><th>Livello PPAP</th><td>${level}</td><th>Data PSW</th><td>${today}</td></tr>
+  </table>
+  <h2>Dichiarazione di Conformità</h2>
+  <p>Il sottoscritto responsabile Qualità, con la presente firma, dichiara che:</p>
+  <ul style="line-height:2">
+    <li>Tutte le misure dimensionali sono conformi alle specifiche di disegno</li>
+    <li>I test di laboratorio e di performance sono stati eseguiti con esito positivo</li>
+    <li>Gli studi di capability del processo dimostrano il rispetto dei requisiti</li>
+    <li>Il sistema di misura è stato verificato e validato (MSA)</li>
+    <li>La PFMEA e il Control Plan sono stati completati e approvati</li>
+    <li>Tutta la documentazione è disponibile e archiviata</li>
+  </ul>
+  <h2>Firme di Autorizzazione</h2>
+  <div class="sign-grid">
+    <div class="sign-box"><strong>Responsabile Qualità</strong><div class="sign-line">Firma e Data</div></div>
+    <div class="sign-box"><strong>Resp. Produzione</strong><div class="sign-line">Firma e Data</div></div>
+    <div class="sign-box"><strong>Management</strong><div class="sign-line">Firma e Data</div></div>
+  </div>
+  <p style="margin-top:20px;font-size:10px;color:#666">Documento generato dal sistema PPAP Manager R1 — ${today}</p>
+  </body></html>`);
+  w.document.close();
+}
+
+// ─── SAVE / LOAD ─────────────────────────────────────────
+function saveData() {
+  try {
+    const inputs = {};
+    document.querySelectorAll('input[id], select[id], textarea[id]').forEach(el => {
+      if (el.id) inputs[el.id] = el.type==='checkbox' ? el.checked : el.value;
+    });
+    localStorage.setItem('ppap_r0_data', JSON.stringify({inputs, status: STATUS_MAP, ts: new Date().toISOString()}));
+    showToast('💾 Dati salvati correttamente');
+  } catch(e) { alert('Errore nel salvataggio: ' + e.message); }
+}
+
+function loadData() {
+  try {
+    const raw = localStorage.getItem('ppap_r0_data');
+    if (!raw) return;
+    const d = JSON.parse(raw);
+    if (d.inputs) {
+      Object.entries(d.inputs).forEach(([id,val]) => {
+        const el = document.getElementById(id);
+        if (!el) return;
+        if (el.type==='checkbox') el.checked = val;
+        else el.value = val;
+      });
+    }
+    if (d.status) {
+      Object.assign(STATUS_MAP, d.status);
+      Object.entries(STATUS_MAP).forEach(([page, st]) => {
+        const el = document.getElementById('st-' + page);
+        if (el) el.className = 'nav-status ' + (st||'');
+      });
+      updateProgress();
+    }
+    updateHeader();
+    updateLevelTable();
+  } catch(e) {}
+}
+
+// ─── FILE MANAGER ────────────────────────────────────────
+let _selectedFileData = null;
+
+function openFileManager() {
+  // Auto-fill filename from project data
+  const partno = document.getElementById('f-partno')?.value || '';
+  const client = document.getElementById('f-client')?.value || '';
+  let base = 'PPAP_R1';
+  if (partno) base = 'PPAP_' + partno.replace(/[^a-zA-Z0-9_\-]/g, '_');
+  if (client) base += '_' + client.replace(/[^a-zA-Z0-9_\-]/g, '_').substring(0, 15);
+  document.getElementById('fm-filename').value = base;
+  updatePreview();
+  loadRecentList();
+  clearSelectedFile();
+  const modal = document.getElementById('file-modal');
+  modal.style.display = 'flex';
+}
+
+function closeFileManager() {
+  document.getElementById('file-modal').style.display = 'none';
+}
+
+// Close modal clicking outside
+document.addEventListener('click', function(e) {
+  const modal = document.getElementById('file-modal');
+  if (e.target === modal) closeFileManager();
+});
+
+function buildFilename() {
+  const base = (document.getElementById('fm-filename').value || 'PPAP_R1').trim();
+  const suffix = document.getElementById('fm-datesuffix').value;
+  const now = new Date();
+  let ds = '';
+  if (suffix === 'date') {
+    ds = '_' + now.getFullYear() +
+         String(now.getMonth()+1).padStart(2,'0') +
+         String(now.getDate()).padStart(2,'0');
+  } else if (suffix === 'datetime') {
+    ds = '_' + now.getFullYear() +
+         String(now.getMonth()+1).padStart(2,'0') +
+         String(now.getDate()).padStart(2,'0') +
+         '_' + String(now.getHours()).padStart(2,'0') +
+         String(now.getMinutes()).padStart(2,'0');
+  }
+  return base + ds + '.json';
+}
+
+function updatePreview() {
+  const el = document.getElementById('fm-preview');
+  if (el) el.textContent = buildFilename();
+}
+
+function saveToFile() {
+  // First save to localStorage
+  saveData();
+  const raw = localStorage.getItem('ppap_r0_data');
+  if (!raw) { showToast('⚠ Nessun dato da salvare'); return; }
+
+  const filename = buildFilename();
+
+  // Add metadata
+  let data;
+  try { data = JSON.parse(raw); } catch(e) { data = {}; }
+  data._meta = {
+    filename,
+    savedAt: new Date().toISOString(),
+    savedAtFormatted: new Date().toLocaleString('it-IT'),
+    partno: document.getElementById('f-partno')?.value || '',
+    partname: document.getElementById('f-partname')?.value || '',
+    client: document.getElementById('f-client')?.value || '',
+    level: document.getElementById('f-level')?.value || '',
+    appVersion: 'PPAP Manager R1'
+  };
+
+  const blob = new Blob([JSON.stringify(data, null, 2)], {type: 'application/json'});
+  const a = document.createElement('a');
+  a.href = URL.createObjectURL(blob);
+  a.download = filename;
+  document.body.appendChild(a);
+  a.click();
+  document.body.removeChild(a);
+  setTimeout(() => URL.revokeObjectURL(a.href), 5000);
+
+  // Save to recent list
+  addToRecentList(filename, data._meta);
+
+  showToast('💾 File scaricato: ' + filename);
+  closeFileManager();
+}
+
+function handleFileSelect(event) {
+  const file = event.target.files[0];
+  if (file) processSelectedFile(file);
+}
+
+function handleFileDrop(event) {
+  event.preventDefault();
+  document.getElementById('fm-dropzone').style.borderColor = 'var(--border2)';
+  const file = event.dataTransfer.files[0];
+  if (file) processSelectedFile(file);
+}
+
+function processSelectedFile(file) {
+  if (!file.name.endsWith('.json')) {
+    showToast('⚠ Selezionare un file .json');
+    return;
+  }
+  const reader = new FileReader();
+  reader.onload = function(e) {
+    try {
+      const data = JSON.parse(e.target.result);
+      _selectedFileData = data;
+      const meta = data._meta || {};
+      const ts = meta.savedAtFormatted || meta.savedAt || '—';
+      const partno = meta.partno || data.inputs?.['f-partno'] || '—';
+      const partname = meta.partname || data.inputs?.['f-partname'] || '—';
+      const client = meta.client || data.inputs?.['f-client'] || '—';
+      const level = meta.level || data.inputs?.['f-level'] || '—';
+      const size = (e.target.result.length / 1024).toFixed(1);
+
+      document.getElementById('fm-filedetails').innerHTML =
+        '<table style="width:100%;font-family:var(--font-mono);font-size:11px;border-collapse:collapse;">' +
+        '<tr><td style="color:var(--text3);padding:2px 8px 2px 0;white-space:nowrap;">File</td><td style="color:var(--text);font-weight:600;">' + file.name + ' (' + size + ' KB)</td></tr>' +
+        '<tr><td style="color:var(--text3);padding:2px 8px 2px 0;white-space:nowrap;">Salvato il</td><td style="color:var(--text);">' + ts + '</td></tr>' +
+        '<tr><td style="color:var(--text3);padding:2px 8px 2px 0;white-space:nowrap;">Codice parte</td><td style="color:var(--accent);font-weight:600;">' + partno + '</td></tr>' +
+        '<tr><td style="color:var(--text3);padding:2px 8px 2px 0;white-space:nowrap;">Descrizione</td><td style="color:var(--text);">' + partname + '</td></tr>' +
+        '<tr><td style="color:var(--text3);padding:2px 8px 2px 0;white-space:nowrap;">Cliente</td><td style="color:var(--text);">' + client + '</td></tr>' +
+        '<tr><td style="color:var(--text3);padding:2px 8px 2px 0;white-space:nowrap;">Livello PPAP</td><td style="color:var(--text);">' + (level ? 'Livello ' + level : '—') + '</td></tr>' +
+        '</table>';
+
+      document.getElementById('fm-fileinfo').style.display = 'block';
+      document.getElementById('fm-dropzone').style.display = 'none';
+    } catch(err) {
+      showToast('⚠ File non valido o corrotto');
+      _selectedFileData = null;
+    }
+  };
+  reader.readAsText(file);
+}
+
+function clearSelectedFile() {
+  _selectedFileData = null;
+  document.getElementById('fm-fileinfo').style.display = 'none';
+  document.getElementById('fm-dropzone').style.display = 'block';
+  document.getElementById('fm-fileinput').value = '';
+}
+
+function loadFromFile() {
+  if (!_selectedFileData) { showToast('⚠ Nessun file selezionato'); return; }
+  const confirmed = confirm('Caricare questo file? I dati attuali nel browser verranno SOSTITUITI.');
+  if (!confirmed) return;
+
+  // Restore inputs
+  if (_selectedFileData.inputs) {
+    Object.entries(_selectedFileData.inputs).forEach(([id, val]) => {
+      const el = document.getElementById(id);
+      if (!el) return;
+      if (el.type === 'checkbox') el.checked = val;
+      else el.value = val;
+    });
+  }
+  // Restore status
+  if (_selectedFileData.status) {
+    Object.assign(STATUS_MAP, _selectedFileData.status);
+    Object.entries(STATUS_MAP).forEach(([page, st]) => {
+      const el = document.getElementById('st-' + page);
+      if (el) el.className = 'nav-status ' + (st || '');
+    });
+    updateProgress();
+  }
+  // Sync localStorage too
+  localStorage.setItem('ppap_r0_data', JSON.stringify(_selectedFileData));
+
+  updateHeader();
+  updateLevelTable();
+  showToast('📂 Progetto caricato correttamente');
+  closeFileManager();
+}
+
+// ─── RECENTI ────────────────────────────────────────────
+function addToRecentList(filename, meta) {
+  try {
+    let recent = JSON.parse(localStorage.getItem('ppap_r0_recent') || '[]');
+    // Remove duplicate by filename
+    recent = recent.filter(r => r.filename !== filename);
+    recent.unshift({ filename, meta, ts: new Date().toISOString() });
+    if (recent.length > 8) recent = recent.slice(0, 8);
+    localStorage.setItem('ppap_r0_recent', JSON.stringify(recent));
+  } catch(e) {}
+}
+
+function loadRecentList() {
+  try {
+    const recent = JSON.parse(localStorage.getItem('ppap_r0_recent') || '[]');
+    const el = document.getElementById('fm-recent-list');
+    if (!recent.length) {
+      el.textContent = 'Nessun file recente.';
+      return;
+    }
+    el.innerHTML = recent.map(r => {
+      const meta = r.meta || {};
+      const d = r.ts ? new Date(r.ts).toLocaleString('it-IT') : '—';
+      return '<div style="border:1px solid var(--border);padding:8px 10px;margin-bottom:6px;background:var(--bg3);display:flex;align-items:center;justify-content:space-between;gap:10px;">' +
+        '<div>' +
+        '<div style="font-family:var(--font-mono);font-size:11px;color:var(--accent);">' + r.filename + '</div>' +
+        '<div style="font-size:11px;color:var(--text3);margin-top:2px;">' + d + (meta.partno ? ' &nbsp;|&nbsp; ' + meta.partno : '') + (meta.client ? ' &nbsp;|&nbsp; ' + meta.client : '') + '</div>' +
+        '</div>' +
+        '<button onclick="loadFromBrowserCache()" class="btn btn-outline btn-sm" style="white-space:nowrap;font-size:10px;" title="Carica dal browser — valido solo se non hai cancellato la cache">Ricarica dal browser</button>' +
+        '</div>';
+    }).join('');
+  } catch(e) {}
+}
+
+function loadFromBrowserCache() {
+  const confirmed = confirm('Caricare i dati attualmente salvati nel browser? (Funziona solo su questo PC e questo browser)');
+  if (!confirmed) return;
+  loadData();
+  showToast('📂 Dati ripristinati dal browser');
+  closeFileManager();
+}
+
+function exportJSON() {
+  saveToFile();
+}
+
+function printPPAP() { window.print(); }
+
+// ─── TOAST ──────────────────────────────────────────────
+function showToast(msg) {
+  const t = document.getElementById('toast');
+  t.textContent = msg;
+  t.style.display = 'block';
+  setTimeout(() => { t.style.display = 'none'; }, 2800);
+}
+
+// ─── DATE ────────────────────────────────────────────────
+function initDate() {
+  const d = new Date();
+  document.getElementById('hdr-date').textContent = d.toLocaleDateString('it-IT');
+}
+
+// ─── INIT ────────────────────────────────────────────────
+
+// Close file modal on ESC
+document.addEventListener('keydown', function(e) {
+  if (e.key === 'Escape') closeFileManager();
+});
+
+document.addEventListener('DOMContentLoaded', () => {
+  buildElementsTable();
+  initDate();
+  loadData();
+  // Set r1 date default
+  const r0date = document.getElementById('rev-r0-date');
+  if (r0date && !r0date.value) r0date.valueAsDate = new Date();
+});
+</script>
+</body>
+</html>
